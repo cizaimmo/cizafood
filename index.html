@@ -7,14 +7,6 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
-<!-- ✅ PWA AJOUT -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0B0B0C">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="CizaFood+">
-<link rel="apple-touch-icon" href="icon-192.png">
-
 <style>
 body{
 margin:0;
@@ -23,83 +15,75 @@ background:#0B0B0C;
 color:#fff;
 }
 
-/* FIX CENTRAGE PREMIUM */
+/* SCREENS */
 .screen{
 display:none;
 min-height:100vh;
 padding:20px;
+}
+
+.active{display:block;}
+
+/* HOME CENTER */
+.center{
 display:flex;
 flex-direction:column;
 justify-content:center;
 }
 
-.active{display:flex;}
-
-/* 🔥 LOGO ULTRA DOMINANT */
+/* LOGO */
 .logo{
 width:260px;
 max-width:85%;
-margin:0 auto 50px;
+margin:0 auto 60px;
 display:block;
 }
 
-/* TEXT */
-h1{text-align:center;margin-bottom:10px;}
-.subtitle{text-align:center;color:#aaa;margin-bottom:30px;}
-
-/* BUTTON */
-.btn{
-width:100%;
-padding:16px;
-border-radius:14px;
-border:none;
-margin-top:12px;
-font-weight:600;
+/* CARDS ROLE */
+.role-card{
+background:#151517;
+padding:18px;
+border-radius:18px;
+margin-top:15px;
 cursor:pointer;
 transition:0.2s;
+border:1px solid #1c1c1c;
 }
 
-.btn:active{
-transform:scale(0.97);
+.role-card:hover{
+transform:translateY(-3px);
 }
 
-.gold{background:#D4AF37;color:#000;}
-.dark{background:#151517;color:#fff;}
+.role-title{
+font-weight:600;
+font-size:16px;
+}
 
-/* INPUT */
-.input{
+.role-desc{
+font-size:12px;
+color:#aaa;
+margin-top:4px;
+}
+
+/* HEADER */
+.header{
+font-size:20px;
+font-weight:700;
+margin-bottom:20px;
+}
+
+/* SEARCH */
+.search{
 width:100%;
 padding:14px;
 border-radius:12px;
 border:none;
 background:#151517;
 color:#fff;
-margin-top:10px;
+margin-bottom:15px;
 }
 
-/* UPLOAD PREMIUM */
-.upload{
-background:#151517;
-padding:14px;
-border-radius:12px;
-margin-top:10px;
-text-align:center;
-cursor:pointer;
-transition:0.2s;
-}
-
-.upload:hover{
-opacity:0.8;
-}
-
-/* IMAGE PREVIEW */
-.preview{
-margin-top:10px;
-max-width:100%;
-border-radius:10px;
-}
-
-/* CARD */
+/* RESTO CARD */
 .card{
 background:#151517;
 padding:16px;
@@ -107,198 +91,92 @@ border-radius:14px;
 margin-top:12px;
 }
 
-/* FOOTER */
-.footer{
-text-align:center;
-font-size:12px;
-color:#888;
-margin-top:40px;
+/* BUTTON BACK */
+.back{
+margin-top:20px;
+color:#D4AF37;
+cursor:pointer;
+font-size:14px;
 }
 </style>
 </head>
 
 <body>
 
-<!-- LANDING -->
-<div id="landing" class="screen active">
+<!-- HOME -->
+<div id="home" class="screen active center">
+
 <img src="https://raw.githubusercontent.com/cizaimmo/cizafood/d4e54f9e35499c7e929b38238a0ecb5bd94d2a25/F262698A-75D3-4960-B6DB-229091B6EDFF.png" class="logo">
 
-<div class="subtitle">Choisissez votre rôle</div>
-
-<button class="btn dark" onclick="selectRole('client')">👤 Commander</button>
-<button class="btn dark" onclick="selectRole('driver')">🚚 Livrer</button>
-<button class="btn dark" onclick="selectRole('restaurant')">🍽️ Restaurant</button>
-
-<div class="footer">
-CizaFood+<br>Division de Ciza Group | Burundi 🇧🇮
-</div>
+<div class="role-card" onclick="go('client')">
+<div class="role-title">👤 Commander</div>
+<div class="role-desc">Commander vos repas facilement</div>
 </div>
 
-<!-- LOGIN -->
-<div id="login" class="screen">
-<h1>Connexion</h1>
-
-<input id="email" class="input" placeholder="Email">
-<input id="password" type="password" class="input" placeholder="Mot de passe">
-
-<button class="btn gold" onclick="login()">Se connecter</button>
-<button class="btn dark" onclick="goSignup()">Créer compte</button>
+<div class="role-card" onclick="go('driver')">
+<div class="role-title">🚚 Livrer</div>
+<div class="role-desc">Gérer vos livraisons</div>
 </div>
 
-<!-- SIGNUP -->
-<div id="signup" class="screen">
-<h1>Créer un compte</h1>
+<div class="role-card" onclick="go('restaurant')">
+<div class="role-title">🍽️ Restaurant</div>
+<div class="role-desc">Recevoir et gérer les commandes</div>
+</div>
 
-<input id="name" class="input" placeholder="Nom">
-<input id="phone" class="input" placeholder="Téléphone">
-<input id="email2" class="input" placeholder="Email">
-<input id="password2" type="password" class="input" placeholder="Mot de passe">
-
-<div id="extra"></div>
-
-<button class="btn gold" onclick="signup()">Créer</button>
-<button class="btn dark" onclick="show('login')">Retour</button>
 </div>
 
 <!-- CLIENT -->
 <div id="client" class="screen">
-<h1>Accueil</h1>
 
-<div class="card">🍔 Burger House<br><span style="color:#D4AF37">8000 BIF</span></div>
-<div class="card">🍕 Pizza Bujumbura<br><span style="color:#D4AF37">10000 BIF</span></div>
+<div class="header">Accueil</div>
+
+<input class="search" placeholder="🔍 Rechercher un restaurant">
+
+<div class="card">
+🍔 Burger House<br>
+<span style="color:#D4AF37">8000 BIF</span>
+</div>
+
+<div class="card">
+🍕 Pizza Bujumbura<br>
+<span style="color:#D4AF37">10000 BIF</span>
+</div>
+
+<div class="back" onclick="go('home')">← Retour</div>
+
 </div>
 
 <!-- DRIVER -->
 <div id="driver" class="screen">
-<h1>Dashboard Chauffeur</h1>
-<div class="card">Aucune livraison pour le moment</div>
+
+<div class="header">Livraisons</div>
+
+<div class="card">
+Aucune livraison disponible
+</div>
+
+<div class="back" onclick="go('home')">← Retour</div>
+
 </div>
 
 <!-- RESTAURANT -->
 <div id="restaurant" class="screen">
-<h1>Dashboard Restaurant</h1>
-<div class="card">Aucune commande</div>
+
+<div class="header">Commandes</div>
+
+<div class="card">
+Aucune commande reçue
+</div>
+
+<div class="back" onclick="go('home')">← Retour</div>
+
 </div>
 
 <script>
 
-let role = null;
-
-// ROUTING
-function show(id){
+function go(id){
 document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
 document.getElementById(id).classList.add('active');
-}
-
-// ROLE
-function selectRole(r){
-role = r;
-show("login");
-}
-
-// SIGNUP NAV
-function goSignup(){
-show("signup");
-loadSignupFields();
-}
-
-// LOGIN
-function login(){
-let email = document.getElementById("email").value;
-let pass = document.getElementById("password").value;
-
-if(!email.includes("@")){
-alert("Email invalide");
-return;
-}
-
-if(pass.length < 4){
-alert("Mot de passe trop court");
-return;
-}
-
-redirect();
-}
-
-// SIGNUP FIELDS
-function loadSignupFields(){
-
-let extra = document.getElementById("extra");
-
-if(role==="driver"){
-extra.innerHTML = `
-<input class="input" placeholder="Numéro permis">
-<div class="upload" onclick="upload(this)">📸 Photo permis</div>
-<div class="upload" onclick="upload(this)">🛡 Assurance</div>
-<input class="input" placeholder="Véhicule">
-<input class="input" placeholder="Plaque">
-<div class="upload" onclick="upload(this)">👤 Photo profil</div>
-`;
-}
-
-if(role==="restaurant"){
-extra.innerHTML = `
-<input class="input" placeholder="Nom restaurant">
-<input class="input" placeholder="Adresse">
-<input class="input" placeholder="Type d’activité">
-`;
-}
-
-if(role==="client"){
-extra.innerHTML = `
-<div class="upload" onclick="upload(this)">👤 Photo profil</div>
-`;
-}
-
-}
-
-// SIGNUP
-function signup(){
-let email = document.getElementById("email2").value;
-let pass = document.getElementById("password2").value;
-
-if(!email.includes("@")){
-alert("Email invalide");
-return;
-}
-
-if(pass.length < 4){
-alert("Mot de passe trop court");
-return;
-}
-
-redirect();
-}
-
-// REDIRECTION
-function redirect(){
-if(role==="client") show("client");
-if(role==="driver") show("driver");
-if(role==="restaurant") show("restaurant");
-}
-
-// UPLOAD
-function upload(el){
-
-let input = document.createElement("input");
-input.type="file";
-
-input.onchange = e=>{
-let file = e.target.files[0];
-let reader = new FileReader();
-
-reader.onload = ()=>{
-el.innerHTML = "";
-let img = document.createElement("img");
-img.src = reader.result;
-img.className = "preview";
-el.appendChild(img);
-};
-
-reader.readAsDataURL(file);
-};
-
-input.click();
 }
 
 </script>
