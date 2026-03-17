@@ -25,94 +25,151 @@ body{
 font-family:'Inter',sans-serif;
 background:#0B0B0C;
 color:#fff;
+height:100vh;
 display:flex;
-flex-direction:column;
 justify-content:center;
 align-items:center;
-height:100vh;
-padding:20px;
 }
 
-/* LOGO */
-.logo{
-width:260px;
-max-width:85%;
-margin-bottom:50px;
-}
-
-/* SUBTITLE */
-.subtitle{
-color:#aaa;
-font-size:15px;
-margin-bottom:30px;
-text-align:center;
-}
-
-/* BUTTON */
-.btn{
+/* CONTAINER */
+.app{
 width:100%;
 max-width:420px;
-padding:16px;
-border-radius:14px;
-border:1px solid #1f1f23;
-background:#151517;
-color:#fff;
-font-size:15px;
-font-weight:600;
-margin-top:14px;
-cursor:pointer;
-transition:0.2s;
+padding:20px;
+position:relative;
 }
 
-.btn:active{
-transform:scale(0.97);
+/* SCREENS */
+.screen{
+display:none;
+}
+
+.active{
+display:block;
+}
+
+/* LOGO ULTRA DOMINANT */
+.logo{
+width:300px;
+max-width:90%;
+display:block;
+margin:0 auto 60px;
+}
+
+/* TEXT */
+.subtitle{
+text-align:center;
+color:#9a9a9f;
+font-size:16px;
+margin-bottom:35px;
+}
+
+/* BUTTON PREMIUM */
+.btn{
+width:100%;
+padding:18px;
+border-radius:18px;
+border:1px solid #1f1f23;
+background:linear-gradient(180deg,#151517,#101012);
+color:#fff;
+font-size:16px;
+font-weight:600;
+margin-top:16px;
+cursor:pointer;
+transition:0.2s;
+box-shadow:0 8px 20px rgba(0,0,0,0.3);
 }
 
 .btn:hover{
 border-color:#D4AF37;
 }
 
+.btn:active{
+transform:scale(0.97);
+}
+
+/* BUTTON PRIMARY */
+.btn-primary{
+border-color:#D4AF37;
+box-shadow:0 0 20px rgba(212,175,55,0.2);
+}
+
+/* HEADER SCREEN */
+.header{
+font-size:22px;
+font-weight:800;
+margin-bottom:25px;
+}
+
+/* BACK */
+.back{
+margin-top:30px;
+color:#D4AF37;
+font-weight:600;
+cursor:pointer;
+}
+
 /* FOOTER */
 .footer{
 position:absolute;
 bottom:20px;
+width:100%;
 text-align:center;
 font-size:12px;
-color:#888;
+color:#777;
 }
 </style>
 </head>
 
 <body>
 
+<div class="app">
+
+<!-- HOME -->
+<div id="home" class="screen active">
+
 <img src="https://raw.githubusercontent.com/cizaimmo/cizafood/d4e54f9e35499c7e929b38238a0ecb5bd94d2a25/F262698A-75D3-4960-B6DB-229091B6EDFF.png" class="logo">
 
 <div class="subtitle">Choisissez votre rôle</div>
 
-<button class="btn" onclick="go('client')">👤 Commander</button>
+<button class="btn btn-primary" onclick="go('client')">👤 Commander</button>
 <button class="btn" onclick="go('driver')">🚚 Livrer</button>
 <button class="btn" onclick="go('restaurant')">🍽️ Restaurant</button>
+
+</div>
+
+<!-- CLIENT -->
+<div id="client" class="screen">
+<div class="header">Espace client</div>
+
+<div class="back" onclick="go('home')">← Retour</div>
+</div>
+
+<!-- DRIVER -->
+<div id="driver" class="screen">
+<div class="header">Espace chauffeur</div>
+
+<div class="back" onclick="go('home')">← Retour</div>
+</div>
+
+<!-- RESTAURANT -->
+<div id="restaurant" class="screen">
+<div class="header">Espace restaurant</div>
+
+<div class="back" onclick="go('home')">← Retour</div>
+</div>
 
 <div class="footer">
 CizaFood+<br>
 Division de Ciza Group | Burundi 🇧🇮
 </div>
 
+</div>
+
 <script>
-function go(role){
-
-if(role==="client"){
-alert("Espace client");
-}
-
-if(role==="driver"){
-alert("Espace chauffeur");
-}
-
-if(role==="restaurant"){
-alert("Espace restaurant");
-}
-
+function go(id){
+document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+document.getElementById(id).classList.add('active');
 }
 </script>
 
