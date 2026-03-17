@@ -7,178 +7,113 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B0B0C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="CizaFood+">
+<link rel="apple-touch-icon" href="icon-192.png">
+
 <style>
-body{
+*{
 margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
 font-family:'Inter',sans-serif;
 background:#0B0B0C;
 color:#fff;
-}
-
-/* SCREENS */
-.screen{
-display:none;
-min-height:100vh;
-padding:20px;
-}
-
-.active{display:block;}
-
-/* HOME CENTER */
-.center{
 display:flex;
 flex-direction:column;
 justify-content:center;
+align-items:center;
+height:100vh;
+padding:20px;
 }
 
 /* LOGO */
 .logo{
 width:260px;
 max-width:85%;
-margin:0 auto 60px;
-display:block;
+margin-bottom:50px;
 }
 
-/* CARDS ROLE */
-.role-card{
-background:#151517;
-padding:18px;
-border-radius:18px;
-margin-top:15px;
-cursor:pointer;
-transition:0.2s;
-border:1px solid #1c1c1c;
-}
-
-.role-card:hover{
-transform:translateY(-3px);
-}
-
-.role-title{
-font-weight:600;
-font-size:16px;
-}
-
-.role-desc{
-font-size:12px;
+/* SUBTITLE */
+.subtitle{
 color:#aaa;
-margin-top:4px;
+font-size:15px;
+margin-bottom:30px;
+text-align:center;
 }
 
-/* HEADER */
-.header{
-font-size:20px;
-font-weight:700;
-margin-bottom:20px;
-}
-
-/* SEARCH */
-.search{
+/* BUTTON */
+.btn{
 width:100%;
-padding:14px;
-border-radius:12px;
-border:none;
-background:#151517;
-color:#fff;
-margin-bottom:15px;
-}
-
-/* RESTO CARD */
-.card{
-background:#151517;
+max-width:420px;
 padding:16px;
 border-radius:14px;
-margin-top:12px;
+border:1px solid #1f1f23;
+background:#151517;
+color:#fff;
+font-size:15px;
+font-weight:600;
+margin-top:14px;
+cursor:pointer;
+transition:0.2s;
 }
 
-/* BUTTON BACK */
-.back{
-margin-top:20px;
-color:#D4AF37;
-cursor:pointer;
-font-size:14px;
+.btn:active{
+transform:scale(0.97);
+}
+
+.btn:hover{
+border-color:#D4AF37;
+}
+
+/* FOOTER */
+.footer{
+position:absolute;
+bottom:20px;
+text-align:center;
+font-size:12px;
+color:#888;
 }
 </style>
 </head>
 
 <body>
 
-<!-- HOME -->
-<div id="home" class="screen active center">
-
 <img src="https://raw.githubusercontent.com/cizaimmo/cizafood/d4e54f9e35499c7e929b38238a0ecb5bd94d2a25/F262698A-75D3-4960-B6DB-229091B6EDFF.png" class="logo">
 
-<div class="role-card" onclick="go('client')">
-<div class="role-title">👤 Commander</div>
-<div class="role-desc">Commander vos repas facilement</div>
-</div>
+<div class="subtitle">Choisissez votre rôle</div>
 
-<div class="role-card" onclick="go('driver')">
-<div class="role-title">🚚 Livrer</div>
-<div class="role-desc">Gérer vos livraisons</div>
-</div>
+<button class="btn" onclick="go('client')">👤 Commander</button>
+<button class="btn" onclick="go('driver')">🚚 Livrer</button>
+<button class="btn" onclick="go('restaurant')">🍽️ Restaurant</button>
 
-<div class="role-card" onclick="go('restaurant')">
-<div class="role-title">🍽️ Restaurant</div>
-<div class="role-desc">Recevoir et gérer les commandes</div>
-</div>
-
-</div>
-
-<!-- CLIENT -->
-<div id="client" class="screen">
-
-<div class="header">Accueil</div>
-
-<input class="search" placeholder="🔍 Rechercher un restaurant">
-
-<div class="card">
-🍔 Burger House<br>
-<span style="color:#D4AF37">8000 BIF</span>
-</div>
-
-<div class="card">
-🍕 Pizza Bujumbura<br>
-<span style="color:#D4AF37">10000 BIF</span>
-</div>
-
-<div class="back" onclick="go('home')">← Retour</div>
-
-</div>
-
-<!-- DRIVER -->
-<div id="driver" class="screen">
-
-<div class="header">Livraisons</div>
-
-<div class="card">
-Aucune livraison disponible
-</div>
-
-<div class="back" onclick="go('home')">← Retour</div>
-
-</div>
-
-<!-- RESTAURANT -->
-<div id="restaurant" class="screen">
-
-<div class="header">Commandes</div>
-
-<div class="card">
-Aucune commande reçue
-</div>
-
-<div class="back" onclick="go('home')">← Retour</div>
-
+<div class="footer">
+CizaFood+<br>
+Division de Ciza Group | Burundi 🇧🇮
 </div>
 
 <script>
+function go(role){
 
-function go(id){
-document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-document.getElementById(id).classList.add('active');
+if(role==="client"){
+alert("Espace client");
 }
 
+if(role==="driver"){
+alert("Espace chauffeur");
+}
+
+if(role==="restaurant"){
+alert("Espace restaurant");
+}
+
+}
 </script>
 
 </body>
