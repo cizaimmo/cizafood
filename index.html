@@ -7,6 +7,14 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
+<!-- ✅ PWA AJOUT -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B0B0C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="CizaFood+">
+<link rel="apple-touch-icon" href="icon-192.png">
+
 <style>
 body{
 margin:0;
@@ -15,18 +23,31 @@ background:#0B0B0C;
 color:#fff;
 }
 
-.screen{display:none;padding:20px;min-height:100vh;}
-.active{display:block;}
+/* FIX CENTRAGE PREMIUM */
+.screen{
+display:none;
+min-height:100vh;
+padding:20px;
+display:flex;
+flex-direction:column;
+justify-content:center;
+}
 
+.active{display:flex;}
+
+/* 🔥 LOGO ULTRA DOMINANT */
 .logo{
-width:200px;
-margin:100px auto 40px;
+width:260px;
+max-width:85%;
+margin:0 auto 50px;
 display:block;
 }
 
+/* TEXT */
 h1{text-align:center;margin-bottom:10px;}
 .subtitle{text-align:center;color:#aaa;margin-bottom:30px;}
 
+/* BUTTON */
 .btn{
 width:100%;
 padding:16px;
@@ -35,11 +56,17 @@ border:none;
 margin-top:12px;
 font-weight:600;
 cursor:pointer;
+transition:0.2s;
+}
+
+.btn:active{
+transform:scale(0.97);
 }
 
 .gold{background:#D4AF37;color:#000;}
 .dark{background:#151517;color:#fff;}
 
+/* INPUT */
 .input{
 width:100%;
 padding:14px;
@@ -50,6 +77,7 @@ color:#fff;
 margin-top:10px;
 }
 
+/* UPLOAD PREMIUM */
 .upload{
 background:#151517;
 padding:14px;
@@ -57,14 +85,21 @@ border-radius:12px;
 margin-top:10px;
 text-align:center;
 cursor:pointer;
+transition:0.2s;
 }
 
+.upload:hover{
+opacity:0.8;
+}
+
+/* IMAGE PREVIEW */
 .preview{
 margin-top:10px;
 max-width:100%;
 border-radius:10px;
 }
 
+/* CARD */
 .card{
 background:#151517;
 padding:16px;
@@ -72,6 +107,7 @@ border-radius:14px;
 margin-top:12px;
 }
 
+/* FOOTER */
 .footer{
 text-align:center;
 font-size:12px;
@@ -106,7 +142,7 @@ CizaFood+<br>Division de Ciza Group | Burundi 🇧🇮
 <input id="password" type="password" class="input" placeholder="Mot de passe">
 
 <button class="btn gold" onclick="login()">Se connecter</button>
-<button class="btn dark" onclick="show('signup')">Créer compte</button>
+<button class="btn dark" onclick="goSignup()">Créer compte</button>
 </div>
 
 <!-- SIGNUP -->
@@ -124,7 +160,7 @@ CizaFood+<br>Division de Ciza Group | Burundi 🇧🇮
 <button class="btn dark" onclick="show('login')">Retour</button>
 </div>
 
-<!-- APP CLIENT -->
+<!-- CLIENT -->
 <div id="client" class="screen">
 <h1>Accueil</h1>
 
@@ -132,13 +168,13 @@ CizaFood+<br>Division de Ciza Group | Burundi 🇧🇮
 <div class="card">🍕 Pizza Bujumbura<br><span style="color:#D4AF37">10000 BIF</span></div>
 </div>
 
-<!-- APP DRIVER -->
+<!-- DRIVER -->
 <div id="driver" class="screen">
 <h1>Dashboard Chauffeur</h1>
 <div class="card">Aucune livraison pour le moment</div>
 </div>
 
-<!-- APP RESTAURANT -->
+<!-- RESTAURANT -->
 <div id="restaurant" class="screen">
 <h1>Dashboard Restaurant</h1>
 <div class="card">Aucune commande</div>
@@ -160,7 +196,13 @@ role = r;
 show("login");
 }
 
-// LOGIN VALIDATION
+// SIGNUP NAV
+function goSignup(){
+show("signup");
+loadSignupFields();
+}
+
+// LOGIN
 function login(){
 let email = document.getElementById("email").value;
 let pass = document.getElementById("password").value;
@@ -178,8 +220,9 @@ return;
 redirect();
 }
 
-// SIGNUP UI DYNAMIQUE
-document.getElementById("signup").addEventListener("click", ()=>{
+// SIGNUP FIELDS
+function loadSignupFields(){
+
 let extra = document.getElementById("extra");
 
 if(role==="driver"){
@@ -189,6 +232,7 @@ extra.innerHTML = `
 <div class="upload" onclick="upload(this)">🛡 Assurance</div>
 <input class="input" placeholder="Véhicule">
 <input class="input" placeholder="Plaque">
+<div class="upload" onclick="upload(this)">👤 Photo profil</div>
 `;
 }
 
@@ -202,13 +246,13 @@ extra.innerHTML = `
 
 if(role==="client"){
 extra.innerHTML = `
-<div class="upload" onclick="upload(this)">📸 Photo profil</div>
+<div class="upload" onclick="upload(this)">👤 Photo profil</div>
 `;
 }
 
-});
+}
 
-// SIGNUP VALIDATION
+// SIGNUP
 function signup(){
 let email = document.getElementById("email2").value;
 let pass = document.getElementById("password2").value;
@@ -233,8 +277,9 @@ if(role==="driver") show("driver");
 if(role==="restaurant") show("restaurant");
 }
 
-// UPLOAD PREVIEW
+// UPLOAD
 function upload(el){
+
 let input = document.createElement("input");
 input.type="file";
 
@@ -243,6 +288,7 @@ let file = e.target.files[0];
 let reader = new FileReader();
 
 reader.onload = ()=>{
+el.innerHTML = "";
 let img = document.createElement("img");
 img.src = reader.result;
 img.className = "preview";
