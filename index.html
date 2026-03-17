@@ -1,1036 +1,223 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>CizaFood+</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>CizaFood+</title>
 
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#0B0B0C" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-  <meta name="apple-mobile-web-app-title" content="CizaFood+" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
-  <style>
-    :root{
-      --bg:#0B0B0C;
-      --panel:#151517;
-      --panel-2:#1B1B1E;
-      --line:#252529;
-      --text:#FFFFFF;
-      --muted:#A1A1AA;
-      --gold:#D4AF37;
-      --danger:#B3261E;
-      --danger-soft:#2A1212;
-      --success:#1E8E3E;
-      --radius:16px;
-      --radius-sm:12px;
-      --shadow:0 10px 30px rgba(0,0,0,.25);
-    }
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
 
-    *{margin:0;padding:0;box-sizing:border-box;}
-    html,body{height:100%;}
-    body{
-      font-family:'Inter',sans-serif;
-      background:var(--bg);
-      color:var(--text);
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-    }
+body{
+  font-family:'Inter',sans-serif;
+  background:#0B0B0C;
+  color:#fff;
+}
 
-    button,input,select,textarea{
-      font:inherit;
-    }
+.main{
+  padding:40px 20px 100px;
+  text-align:center;
+}
 
-    .header{
-      position:fixed;
-      top:0; left:0; right:0;
-      z-index:1000;
-      height:68px;
-      background:rgba(11,11,12,.96);
-      backdrop-filter:blur(10px);
-      border-bottom:1px solid var(--line);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:0 16px;
-    }
+.logo{
+  width:140px;
+  margin:40px auto 20px;
+  display:block;
+}
 
-    .header-left{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      min-width:0;
-    }
+h1{
+  font-size:22px;
+  margin-bottom:10px;
+}
 
-    .logo{
-      height:30px;
-      width:auto;
-      display:block;
-    }
+.subtitle{
+  color:#aaa;
+  margin-bottom:30px;
+}
 
-    .header-title{
-      font-size:13px;
-      color:var(--muted);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
+.btn{
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  border:none;
+  margin-top:12px;
+  font-weight:600;
+}
 
-    .header-btn{
-      border:none;
-      background:var(--panel);
-      color:var(--text);
-      width:40px;
-      height:40px;
-      border-radius:12px;
-      display:grid;
-      place-items:center;
-      cursor:pointer;
-    }
+.gold{background:#D4AF37;color:#000;}
+.dark{background:#151517;color:#fff;}
 
-    .main{
-      padding:84px 16px 100px;
-      max-width:760px;
-      margin:0 auto;
-    }
+.input{
+  width:100%;
+  padding:14px;
+  border-radius:12px;
+  border:none;
+  background:#151517;
+  color:#fff;
+  margin-top:10px;
+}
 
-    .screen-title{
-      font-size:26px;
-      font-weight:800;
-      margin-bottom:8px;
-    }
+.card{
+  background:#151517;
+  padding:18px;
+  border-radius:16px;
+  margin-top:15px;
+  text-align:left;
+}
 
-    .screen-subtitle{
-      color:var(--muted);
-      font-size:14px;
-      margin-bottom:18px;
-      line-height:1.5;
-    }
+.footer{
+  margin-top:40px;
+  font-size:12px;
+  color:#888;
+}
+</style>
 
-    .input,
-    .select,
-    .textarea{
-      width:100%;
-      border:none;
-      outline:none;
-      border-radius:14px;
-      padding:14px 14px;
-      background:var(--panel);
-      color:var(--text);
-      margin-bottom:12px;
-      border:1px solid transparent;
-    }
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    .input:focus,
-    .select:focus,
-    .textarea:focus{
-      border-color:rgba(212,175,55,.55);
-    }
+const firebaseConfig = {
+  apiKey:"XXXX",
+  authDomain:"XXXX",
+  projectId:"XXXX"
+};
 
-    .btn{
-      width:100%;
-      border:none;
-      outline:none;
-      border-radius:14px;
-      padding:14px 16px;
-      cursor:pointer;
-      font-weight:700;
-      transition:.18s ease;
-    }
+const app = initializeApp(firebaseConfig);
+const auth = getAuth();
+const db = getFirestore();
 
-    .btn:active{
-      transform:scale(.99);
-    }
+let role = null;
 
-    .btn-primary{
-      background:var(--gold);
-      color:#111;
-    }
+const UI = document.getElementById("app");
 
-    .btn-secondary{
-      background:var(--panel);
-      color:var(--text);
-      border:1px solid var(--line);
-    }
+// LANDING
+window.landing = function(){
+UI.innerHTML = `
+<img src="https://raw.githubusercontent.com/cizaimmo/cizafood/d4e54f9e35499c7e929b38238a0ecb5bd94d2a25/F262698A-75D3-4960-B6DB-229091B6EDFF.png" class="logo">
 
-    .btn-danger{
-      background:var(--danger);
-      color:#fff;
-    }
+<h1>CizaFood+</h1>
+<div class="subtitle">Choisissez votre rôle</div>
 
-    .btn-danger-soft{
-      background:var(--danger-soft);
-      color:#ffb4ab;
-      border:1px solid rgba(179,38,30,.35);
-    }
+<button class="btn dark" onclick="selectRole('client')">👤 Commander</button>
+<button class="btn dark" onclick="selectRole('driver')">🚚 Livrer</button>
+<button class="btn dark" onclick="selectRole('restaurant')">🍽️ Restaurant</button>
 
-    .btn-row{
-      display:flex;
-      gap:10px;
-      margin-top:6px;
-    }
+<div class="footer">
+CizaFood+<br>Division de Ciza Group | Burundi 🇧🇮
+</div>
+`;
+}
 
-    .btn-row .btn{
-      width:100%;
-    }
+// SELECT ROLE
+window.selectRole = function(r){
+role = r;
+loginUI();
+}
 
-    .card{
-      background:linear-gradient(180deg,var(--panel) 0%, var(--panel-2) 100%);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      padding:16px;
-      margin-bottom:14px;
-      box-shadow:var(--shadow);
-    }
+// LOGIN
+window.loginUI = function(){
+UI.innerHTML = `
+<h1>Connexion</h1>
 
-    .restaurant-card{
-      cursor:pointer;
-    }
+<input id="email" class="input" placeholder="Email">
+<input id="pass" type="password" class="input" placeholder="Mot de passe">
 
-    .restaurant-top{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:12px;
-    }
+<button class="btn gold" onclick="login()">Se connecter</button>
+<button class="btn dark" onclick="signupUI()">Créer un compte</button>
+`;
+}
 
-    .restaurant-name{
-      font-size:17px;
-      font-weight:700;
-      margin-bottom:6px;
-    }
+// SIGNUP UI (MULTI ROLE)
+window.signupUI = function(){
 
-    .restaurant-meta{
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.5;
-    }
+let extra = "";
 
-    .badge{
-      background:rgba(212,175,55,.12);
-      color:var(--gold);
-      padding:8px 10px;
-      border-radius:999px;
-      font-size:12px;
-      font-weight:700;
-      white-space:nowrap;
-    }
+if(role==="driver"){
+extra = `
+<input id="vehicle" class="input" placeholder="Véhicule">
+<input id="plate" class="input" placeholder="Plaque">
+`;
+}
 
-    .menu-item-title{
-      font-size:16px;
-      font-weight:700;
-      margin-bottom:6px;
-    }
+if(role==="restaurant"){
+extra = `
+<input id="restaurant" class="input" placeholder="Nom du restaurant">
+<input id="address" class="input" placeholder="Adresse">
+`;
+}
 
-    .menu-item-desc{
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.45;
-      margin-bottom:10px;
-    }
+UI.innerHTML = `
+<h1>Créer compte</h1>
 
-    .menu-item-footer{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-    }
+<input id="name" class="input" placeholder="Nom">
+<input id="phone" class="input" placeholder="Téléphone">
+<input id="email" class="input" placeholder="Email">
+<input id="pass" type="password" class="input" placeholder="Mot de passe">
 
-    .price{
-      color:var(--gold);
-      font-weight:800;
-    }
+${extra}
 
-    .small{
-      font-size:13px;
-      color:var(--muted);
-    }
+<button class="btn gold" onclick="signup()">Créer</button>
+<button class="btn dark" onclick="loginUI()">Retour</button>
+`;
+}
 
-    .section-gap{
-      height:8px;
-    }
+// SIGNUP
+window.signup = async function(){
+const user = await createUserWithEmailAndPassword(auth,email.value,pass.value);
 
-    .empty{
-      text-align:center;
-      padding:30px 18px;
-      color:var(--muted);
-    }
+await setDoc(doc(db,"users",user.user.uid),{
+role,
+name:name.value,
+phone:phone.value
+});
 
-    .footer{
-      text-align:center;
-      color:#8B8B92;
-      font-size:12px;
-      line-height:1.6;
-      margin-top:28px;
-      padding-bottom:8px;
-    }
+home();
+}
 
-    .bottom-nav{
-      position:fixed;
-      left:0; right:0; bottom:0;
-      z-index:1000;
-      background:rgba(11,11,12,.98);
-      backdrop-filter:blur(10px);
-      border-top:1px solid var(--line);
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:0;
-      padding:10px 8px max(10px, env(safe-area-inset-bottom));
-    }
+// LOGIN
+window.login = async function(){
+await signInWithEmailAndPassword(auth,email.value,pass.value);
+home();
+}
 
-    .nav-btn{
-      border:none;
-      background:transparent;
-      color:var(--muted);
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:4px;
-      min-height:50px;
-      cursor:pointer;
-      border-radius:12px;
-    }
+// HOME (CLIENT ONLY UI)
+window.home = function(){
+UI.innerHTML = `
+<h1>Accueil</h1>
 
-    .nav-btn.active{
-      color:var(--gold);
-    }
+<input class="input" placeholder="🔍 Rechercher">
 
-    .nav-icon{
-      font-size:18px;
-      line-height:1;
-    }
+<div class="card">
+🍔 Burger House<br>
+<span style="color:#D4AF37;">8000 BIF</span>
+<button class="btn gold" onclick="add()">Ajouter</button>
+</div>
 
-    .nav-label{
-      font-size:11px;
-      font-weight:600;
-    }
+<div class="card">
+🍕 Pizza Bujumbura<br>
+<span style="color:#D4AF37;">10000 BIF</span>
+<button class="btn gold" onclick="add()">Ajouter</button>
+</div>
+`;
+}
 
-    .top-space{
-      margin-top:4px;
-    }
+window.add = function(){
+alert("Ajouté au panier");
+}
 
-    .notice{
-      background:rgba(30,142,62,.12);
-      color:#9be6ad;
-      border:1px solid rgba(30,142,62,.28);
-      padding:12px 14px;
-      border-radius:14px;
-      margin-bottom:14px;
-      font-size:13px;
-      line-height:1.45;
-    }
+// INIT
+onAuthStateChanged(auth,user=>{
+if(user) home();
+else landing();
+});
 
-    .error{
-      background:rgba(179,38,30,.12);
-      color:#ffb4ab;
-      border:1px solid rgba(179,38,30,.28);
-      padding:12px 14px;
-      border-radius:14px;
-      margin-bottom:14px;
-      font-size:13px;
-      line-height:1.45;
-    }
-
-    .divider{
-      height:1px;
-      background:var(--line);
-      margin:14px 0;
-    }
-
-    .cart-line{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:12px;
-    }
-
-    .cart-actions{
-      display:flex;
-      gap:8px;
-      margin-top:10px;
-    }
-
-    .mini-btn{
-      border:none;
-      cursor:pointer;
-      border-radius:10px;
-      padding:8px 12px;
-      font-size:13px;
-      font-weight:700;
-    }
-
-    .mini-btn-dark{
-      background:var(--panel);
-      color:#fff;
-      border:1px solid var(--line);
-    }
-
-    .mini-btn-danger{
-      background:var(--danger-soft);
-      color:#ffb4ab;
-      border:1px solid rgba(179,38,30,.35);
-    }
-
-    .total-box{
-      position:sticky;
-      bottom:78px;
-      background:rgba(11,11,12,.96);
-      padding-top:10px;
-    }
-
-    .list-title{
-      font-size:15px;
-      font-weight:700;
-      margin-bottom:10px;
-    }
-
-    .profile-block{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-    }
-
-    .kpi{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-    }
-
-    .muted-link{
-      color:var(--muted);
-      font-size:13px;
-      text-decoration:underline;
-      cursor:pointer;
-    }
-  </style>
+</script>
 </head>
+
 <body>
-
-  <div class="header">
-    <div class="header-left">
-      <img
-        src="https://raw.githubusercontent.com/cizaimmo/cizafood/d4e54f9e35499c7e929b38238a0ecb5bd94d2a25/F262698A-75D3-4960-B6DB-229091B6EDFF.png"
-        alt="CizaFood+"
-        class="logo"
-      />
-      <div class="header-title">Division de Ciza Group | Burundi</div>
-    </div>
-    <button class="header-btn" id="headerActionBtn" aria-label="Action">☰</button>
-  </div>
-
-  <main class="main" id="app"></main>
-
-  <nav class="bottom-nav">
-    <button class="nav-btn active" id="navHome" onclick="home()">
-      <span class="nav-icon">🏠</span>
-      <span class="nav-label">Accueil</span>
-    </button>
-    <button class="nav-btn" id="navCart" onclick="openCart()">
-      <span class="nav-icon">🛒</span>
-      <span class="nav-label">Panier</span>
-    </button>
-    <button class="nav-btn" id="navProfile" onclick="profile()">
-      <span class="nav-icon">👤</span>
-      <span class="nav-label">Profil</span>
-    </button>
-  </nav>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import {
-      getAuth,
-      onAuthStateChanged,
-      signInWithEmailAndPassword,
-      createUserWithEmailAndPassword,
-      signOut,
-      deleteUser,
-      EmailAuthProvider,
-      reauthenticateWithCredential
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      addDoc,
-      serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "XXXX",
-      authDomain: "XXXX",
-      projectId: "XXXX",
-      storageBucket: "XXXX",
-      messagingSenderId: "XXXX",
-      appId: "XXXX"
-    };
-
-    const firebaseApp = initializeApp(firebaseConfig);
-    const auth = getAuth(firebaseApp);
-    const db = getFirestore(firebaseApp);
-
-    const appEl = document.getElementById("app");
-    const headerActionBtn = document.getElementById("headerActionBtn");
-
-    let currentUser = null;
-    let cart = [];
-    let currentRestaurantId = null;
-
-    const restaurants = [
-      {
-        id: "r1",
-        name: "Burger House Bujumbura",
-        area: "Rohero",
-        eta: "20-30 min",
-        rating: "4.6",
-        category: "Burgers",
-        menu: [
-          { id: "m1", name: "Burger Classic", description: "Pain burger, steak, salade, sauce maison.", price: 8500 },
-          { id: "m2", name: "Cheese Burger", description: "Burger fromage fondant, frites incluses.", price: 9800 },
-          { id: "m3", name: "Double Burger", description: "Double steak, cheddar, sauce spéciale.", price: 12500 }
-        ]
-      },
-      {
-        id: "r2",
-        name: "Pizza Express Kinindo",
-        area: "Kinindo",
-        eta: "25-35 min",
-        rating: "4.4",
-        category: "Pizza",
-        menu: [
-          { id: "m4", name: "Pizza Margherita", description: "Tomate, mozzarella, basilic.", price: 12000 },
-          { id: "m5", name: "Pizza Pepperoni", description: "Pepperoni, mozzarella, sauce tomate.", price: 14500 },
-          { id: "m6", name: "Pizza Poulet", description: "Poulet grillé, oignons, fromage.", price: 15000 }
-        ]
-      },
-      {
-        id: "r3",
-        name: "Snack Express Kigobe",
-        area: "Kigobe",
-        eta: "15-25 min",
-        rating: "4.3",
-        category: "Snacks",
-        menu: [
-          { id: "m7", name: "Wrap Poulet", description: "Wrap poulet croustillant, crudités.", price: 7000 },
-          { id: "m8", name: "Club Sandwich", description: "Sandwich triple étage, frites.", price: 6500 },
-          { id: "m9", name: "Frites Maison", description: "Grande portion de frites croustillantes.", price: 3500 }
-        ]
-      }
-    ];
-
-    function formatPrice(value) {
-      return new Intl.NumberFormat("fr-FR").format(value) + " BIF";
-    }
-
-    function escapeHtml(str) {
-      return String(str)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    function setActiveNav(target) {
-      document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.remove("active"));
-      if (target === "home") document.getElementById("navHome").classList.add("active");
-      if (target === "cart") document.getElementById("navCart").classList.add("active");
-      if (target === "profile") document.getElementById("navProfile").classList.add("active");
-    }
-
-    function renderFooter() {
-      return `
-        <div class="footer">
-          CizaFood+<br>
-          Division de Ciza Group | Burundi 🇧🇮
-        </div>
-      `;
-    }
-
-    function setHeaderAction(mode) {
-      if (mode === "logout" && currentUser) {
-        headerActionBtn.textContent = "⎋";
-        headerActionBtn.onclick = logout;
-        headerActionBtn.setAttribute("aria-label", "Déconnexion");
-      } else {
-        headerActionBtn.textContent = "☰";
-        headerActionBtn.onclick = profile;
-        headerActionBtn.setAttribute("aria-label", "Profil");
-      }
-    }
-
-    function loginUI(message = "", isError = false) {
-      setActiveNav("profile");
-      setHeaderAction("default");
-
-      appEl.innerHTML = `
-        <div class="screen-title">Connexion</div>
-        <div class="screen-subtitle">Connecte-toi ou crée ton compte pour commander sur CizaFood+.</div>
-        ${message ? `<div class="${isError ? "error" : "notice"}">${escapeHtml(message)}</div>` : ""}
-
-        <input class="input" id="email" type="email" placeholder="Email" autocomplete="email">
-        <input class="input" id="password" type="password" placeholder="Mot de passe" autocomplete="current-password">
-
-        <button class="btn btn-primary" id="loginBtn">Se connecter</button>
-        <button class="btn btn-secondary" id="signupBtn">Créer un compte</button>
-
-        <div class="footer top-space">
-          CizaFood+<br>
-          Division de Ciza Group | Burundi 🇧🇮
-        </div>
-      `;
-
-      document.getElementById("loginBtn").onclick = login;
-      document.getElementById("signupBtn").onclick = signup;
-    }
-
-    async function login() {
-      const emailEl = document.getElementById("email");
-      const passwordEl = document.getElementById("password");
-
-      const email = emailEl ? emailEl.value.trim() : "";
-      const password = passwordEl ? passwordEl.value : "";
-
-      if (!email || !password) {
-        loginUI("Renseigne ton email et ton mot de passe.", true);
-        return;
-      }
-
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-      } catch (error) {
-        loginUI(getFirebaseError(error), true);
-      }
-    }
-
-    async function signup() {
-      const emailEl = document.getElementById("email");
-      const passwordEl = document.getElementById("password");
-
-      const email = emailEl ? emailEl.value.trim() : "";
-      const password = passwordEl ? passwordEl.value : "";
-
-      if (!email || !password) {
-        loginUI("Renseigne ton email et ton mot de passe.", true);
-        return;
-      }
-
-      if (password.length < 6) {
-        loginUI("Le mot de passe doit contenir au moins 6 caractères.", true);
-        return;
-      }
-
-      try {
-        await createUserWithEmailAndPassword(auth, email, password);
-      } catch (error) {
-        loginUI(getFirebaseError(error), true);
-      }
-    }
-
-    async function logout() {
-      try {
-        await signOut(auth);
-      } catch (error) {
-        alert(getFirebaseError(error));
-      }
-    }
-
-    function getFilteredRestaurants(query = "") {
-      const q = query.trim().toLowerCase();
-      if (!q) return restaurants;
-
-      return restaurants.filter(r => {
-        const inRestaurant = r.name.toLowerCase().includes(q)
-          || r.area.toLowerCase().includes(q)
-          || r.category.toLowerCase().includes(q);
-
-        const inMenu = r.menu.some(item =>
-          item.name.toLowerCase().includes(q) ||
-          item.description.toLowerCase().includes(q)
-        );
-
-        return inRestaurant || inMenu;
-      });
-    }
-
-    function home(query = "") {
-      if (!currentUser) {
-        loginUI();
-        return;
-      }
-
-      setActiveNav("home");
-      setHeaderAction("logout");
-
-      const filtered = getFilteredRestaurants(query);
-
-      const cards = filtered.length
-        ? filtered.map(r => `
-            <div class="card restaurant-card" data-id="${escapeHtml(r.id)}">
-              <div class="restaurant-top">
-                <div>
-                  <div class="restaurant-name">${escapeHtml(r.name)}</div>
-                  <div class="restaurant-meta">
-                    ⭐ ${escapeHtml(r.rating)} • ${escapeHtml(r.eta)}<br>
-                    ${escapeHtml(r.area)} • ${escapeHtml(r.category)}
-                  </div>
-                </div>
-                <div class="badge">Voir</div>
-              </div>
-            </div>
-          `).join("")
-        : `<div class="card empty">Aucun restaurant ou plat trouvé.</div>`;
-
-      appEl.innerHTML = `
-        <div class="screen-title">Accueil</div>
-        <div class="screen-subtitle">Commande rapidement tes repas favoris au Burundi.</div>
-
-        <input class="input" id="searchInput" placeholder="🔍 Rechercher restaurant ou plat" value="${escapeHtml(query)}">
-
-        ${cards}
-        ${renderFooter()}
-      `;
-
-      const searchInput = document.getElementById("searchInput");
-      searchInput.addEventListener("input", e => {
-        home(e.target.value);
-      });
-
-      document.querySelectorAll(".restaurant-card").forEach(card => {
-        card.onclick = () => openRestaurant(card.dataset.id);
-      });
-    }
-
-    function openRestaurant(restaurantId) {
-      if (!currentUser) {
-        loginUI();
-        return;
-      }
-
-      const restaurant = restaurants.find(r => r.id === restaurantId);
-      if (!restaurant) {
-        home();
-        return;
-      }
-
-      currentRestaurantId = restaurant.id;
-      setActiveNav("home");
-      setHeaderAction("logout");
-
-      appEl.innerHTML = `
-        <div class="screen-title">${escapeHtml(restaurant.name)}</div>
-        <div class="screen-subtitle">
-          ⭐ ${escapeHtml(restaurant.rating)} • ${escapeHtml(restaurant.eta)} • ${escapeHtml(restaurant.area)}
-        </div>
-
-        ${restaurant.menu.map(item => `
-          <div class="card">
-            <div class="menu-item-title">${escapeHtml(item.name)}</div>
-            <div class="menu-item-desc">${escapeHtml(item.description)}</div>
-            <div class="menu-item-footer">
-              <div class="price">${formatPrice(item.price)}</div>
-              <button class="mini-btn mini-btn-dark" data-add-id="${escapeHtml(item.id)}">Ajouter</button>
-            </div>
-          </div>
-        `).join("")}
-
-        <div class="btn-row">
-          <button class="btn btn-secondary" id="backHomeBtn">Retour</button>
-          <button class="btn btn-primary" id="openCartBtn">Voir le panier (${cart.length})</button>
-        </div>
-      `;
-
-      document.querySelectorAll("[data-add-id]").forEach(btn => {
-        btn.onclick = () => {
-          const item = restaurant.menu.find(m => m.id === btn.dataset.addId);
-          if (item) {
-            addToCart(restaurant, item);
-          }
-        };
-      });
-
-      document.getElementById("backHomeBtn").onclick = () => home();
-      document.getElementById("openCartBtn").onclick = () => openCart();
-    }
-
-    function addToCart(restaurant, item) {
-      if (!currentUser) {
-        loginUI();
-        return;
-      }
-
-      if (cart.length > 0 && currentRestaurantId && currentRestaurantId !== restaurant.id) {
-        const confirmed = confirm("Ton panier contient déjà des articles d’un autre restaurant. Le vider pour continuer ?");
-        if (!confirmed) return;
-        cart = [];
-      }
-
-      currentRestaurantId = restaurant.id;
-      cart.push({
-        restaurantId: restaurant.id,
-        restaurantName: restaurant.name,
-        id: item.id,
-        name: item.name,
-        price: item.price
-      });
-
-      openRestaurant(restaurant.id);
-      showTempNotice(`“${item.name}” ajouté au panier.`);
-    }
-
-    function showTempNotice(message) {
-      const existing = document.getElementById("tempNotice");
-      if (existing) existing.remove();
-
-      const div = document.createElement("div");
-      div.id = "tempNotice";
-      div.className = "notice";
-      div.textContent = message;
-      appEl.prepend(div);
-
-      setTimeout(() => {
-        const el = document.getElementById("tempNotice");
-        if (el) el.remove();
-      }, 1800);
-    }
-
-    function openCart() {
-      if (!currentUser) {
-        loginUI();
-        return;
-      }
-
-      setActiveNav("cart");
-      setHeaderAction("logout");
-
-      if (!cart.length) {
-        appEl.innerHTML = `
-          <div class="screen-title">Panier</div>
-          <div class="screen-subtitle">Ton panier est vide pour le moment.</div>
-          <div class="card empty">Ajoute des plats depuis un restaurant pour commander.</div>
-          <button class="btn btn-secondary" id="cartBackBtn">Retour à l’accueil</button>
-          ${renderFooter()}
-        `;
-
-        document.getElementById("cartBackBtn").onclick = () => home();
-        return;
-      }
-
-      let total = 0;
-
-      appEl.innerHTML = `
-        <div class="screen-title">Panier</div>
-        <div class="screen-subtitle">${escapeHtml(cart[0].restaurantName)}</div>
-
-        ${cart.map((item, index) => {
-          total += item.price;
-          return `
-            <div class="card">
-              <div class="cart-line">
-                <div>
-                  <div class="menu-item-title">${escapeHtml(item.name)}</div>
-                  <div class="price">${formatPrice(item.price)}</div>
-                </div>
-              </div>
-              <div class="cart-actions">
-                <button class="mini-btn mini-btn-danger" data-remove-index="${index}">Supprimer</button>
-              </div>
-            </div>
-          `;
-        }).join("")}
-
-        <div class="total-box">
-          <div class="card">
-            <div class="kpi">
-              <span>Total</span>
-              <span class="price">${formatPrice(total)}</span>
-            </div>
-            <button class="btn btn-primary" id="checkoutBtn">Commander</button>
-            <button class="btn btn-secondary" id="cartBackRestaurantBtn">Retour au menu</button>
-          </div>
-        </div>
-      `;
-
-      document.querySelectorAll("[data-remove-index]").forEach(btn => {
-        btn.onclick = () => removeItem(Number(btn.dataset.removeIndex));
-      });
-
-      document.getElementById("checkoutBtn").onclick = () => checkout(total);
-      document.getElementById("cartBackRestaurantBtn").onclick = () => {
-        if (currentRestaurantId) openRestaurant(currentRestaurantId);
-        else home();
-      };
-    }
-
-    function removeItem(index) {
-      cart.splice(index, 1);
-
-      if (!cart.length) {
-        currentRestaurantId = null;
-      }
-
-      openCart();
-    }
-
-    async function checkout(total) {
-      if (!currentUser) {
-        loginUI();
-        return;
-      }
-
-      if (!cart.length) {
-        openCart();
-        return;
-      }
-
-      const orderData = {
-        clientUid: currentUser.uid,
-        clientEmail: currentUser.email || "",
-        restaurantId: cart[0].restaurantId,
-        restaurantName: cart[0].restaurantName,
-        items: cart.map(i => ({
-          id: i.id,
-          name: i.name,
-          price: i.price
-        })),
-        totalPrice: total,
-        currency: "BIF",
-        status: "pending",
-        createdAt: serverTimestamp()
-      };
-
-      try {
-        await addDoc(collection(db, "orders"), orderData);
-
-        cart = [];
-        currentRestaurantId = null;
-
-        appEl.innerHTML = `
-          <div class="screen-title">Commande envoyée</div>
-          <div class="notice">
-            Ta commande a bien été envoyée au restaurant.
-          </div>
-
-          <div class="card">
-            <div class="kpi">
-              <span>Total</span>
-              <span class="price">${formatPrice(total)}</span>
-            </div>
-            <div class="divider"></div>
-            <div class="small">Statut initial : pending</div>
-          </div>
-
-          <button class="btn btn-primary" id="afterOrderBtn">Retour à l’accueil</button>
-          ${renderFooter()}
-        `;
-
-        document.getElementById("afterOrderBtn").onclick = () => home();
-      } catch (error) {
-        alert(getFirebaseError(error));
-      }
-    }
-
-    function profile() {
-      if (!currentUser) {
-        loginUI();
-        return;
-      }
-
-      setActiveNav("profile");
-      setHeaderAction("logout");
-
-      appEl.innerHTML = `
-        <div class="screen-title">Profil</div>
-        <div class="screen-subtitle">Compte, sécurité et suppression définitive.</div>
-
-        <div class="card profile-block">
-          <div class="list-title">Compte connecté</div>
-          <div class="small">${escapeHtml(currentUser.email || "Aucun email")}</div>
-        </div>
-
-        <div class="card profile-block">
-          <div class="list-title">Suppression définitive du compte</div>
-          <div class="small">
-            Cette action est irréversible. Pour supprimer ton compte, confirme ton email et ton mot de passe.
-          </div>
-          <input class="input" id="deleteEmail" type="email" placeholder="Confirme ton email">
-          <input class="input" id="deletePassword" type="password" placeholder="Confirme ton mot de passe">
-          <button class="btn btn-danger" id="deleteAccountBtn">Supprimer mon compte</button>
-        </div>
-
-        <div class="card profile-block">
-          <div class="list-title">Session</div>
-          <button class="btn btn-secondary" id="logoutBtn">Déconnexion</button>
-        </div>
-
-        ${renderFooter()}
-      `;
-
-      document.getElementById("deleteAccountBtn").onclick = deleteAccountReal;
-      document.getElementById("logoutBtn").onclick = logout;
-    }
-
-    async function deleteAccountReal() {
-      if (!currentUser || !currentUser.email) {
-        alert("Aucun compte email connecté.");
-        return;
-      }
-
-      const email = document.getElementById("deleteEmail")?.value.trim() || "";
-      const password = document.getElementById("deletePassword")?.value || "";
-
-      if (!email || !password) {
-        alert("Confirme ton email et ton mot de passe.");
-        return;
-      }
-
-      if (email !== currentUser.email) {
-        alert("L’email ne correspond pas au compte connecté.");
-        return;
-      }
-
-      const confirmed = confirm("Veux-tu vraiment supprimer définitivement ton compte ?");
-      if (!confirmed) return;
-
-      try {
-        const credential = EmailAuthProvider.credential(email, password);
-        await reauthenticateWithCredential(currentUser, credential);
-        await deleteUser(currentUser);
-
-        cart = [];
-        currentRestaurantId = null;
-        loginUI("Compte supprimé définitivement.");
-      } catch (error) {
-        alert(getFirebaseError(error));
-      }
-    }
-
-    function getFirebaseError(error) {
-      const code = error?.code || "";
-
-      if (code.includes("invalid-credential")) return "Identifiants invalides.";
-      if (code.includes("invalid-login-credentials")) return "Email ou mot de passe incorrect.";
-      if (code.includes("wrong-password")) return "Mot de passe incorrect.";
-      if (code.includes("user-not-found")) return "Compte introuvable.";
-      if (code.includes("email-already-in-use")) return "Cet email est déjà utilisé.";
-      if (code.includes("weak-password")) return "Le mot de passe est trop faible.";
-      if (code.includes("invalid-email")) return "Adresse email invalide.";
-      if (code.includes("requires-recent-login")) return "Reconnecte-toi puis réessaie la suppression.";
-      if (code.includes("network-request-failed")) return "Problème réseau. Vérifie ta connexion.";
-
-      return error?.message || "Une erreur est survenue.";
-    }
-
-    onAuthStateChanged(auth, user => {
-      currentUser = user;
-      if (user) {
-        home();
-      } else {
-        loginUI();
-      }
-    });
-  </script>
+<div id="app" class="main"></div>
 </body>
 </html>
