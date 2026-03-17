@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>CizaFood+ - Commander</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+font-family:'Inter',sans-serif;
+background:#0B0B0C;
+color:#fff;
+}
+
+/* CONTAINER */
+.app{
+max-width:420px;
+margin:auto;
+min-height:100vh;
+padding:20px;
+padding-bottom:100px;
+}
+
+/* HEADER */
+.header{
+font-size:24px;
+font-weight:800;
+margin-bottom:15px;
+}
+
+/* SEARCH */
+.search{
+width:100%;
+padding:16px;
+border-radius:16px;
+border:none;
+background:#151517;
+color:#fff;
+margin-bottom:20px;
+outline:none;
+}
+
+/* CARD RESTO */
+.restaurant{
+background:#151517;
+border:1px solid #1f1f23;
+padding:18px;
+border-radius:18px;
+margin-bottom:14px;
+cursor:pointer;
+transition:0.2s;
+}
+
+.restaurant:active{
+transform:scale(0.97);
+}
+
+.name{
+font-size:17px;
+font-weight:700;
+margin-bottom:5px;
+}
+
+.meta{
+font-size:13px;
+color:#aaa;
+}
+
+/* MENU */
+.menu{
+background:#151517;
+padding:16px;
+border-radius:16px;
+margin-bottom:12px;
+}
+
+.price{
+color:#D4AF37;
+font-weight:700;
+margin:8px 0;
+}
+
+.btn{
+width:100%;
+padding:14px;
+border:none;
+border-radius:14px;
+background:#D4AF37;
+color:#000;
+font-weight:700;
+cursor:pointer;
+}
+
+/* BACK */
+.back{
+margin-top:20px;
+color:#D4AF37;
+cursor:pointer;
+font-weight:600;
+}
+
+/* CART BAR */
+.cartbar{
+position:fixed;
+bottom:80px;
+left:10px;
+right:10px;
+background:#D4AF37;
+color:#000;
+padding:14px;
+border-radius:16px;
+display:flex;
+justify-content:space-between;
+font-weight:700;
+}
+
+/* TAB BAR */
+.tabbar{
+position:fixed;
+bottom:0;
+left:0;
+right:0;
+background:#0B0B0C;
+border-top:1px solid #1c1c1c;
+display:flex;
+justify-content:space-around;
+padding:12px;
+}
+
+.tab{
+color:#777;
+font-size:14px;
+}
+
+.active{
+color:#D4AF37;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app" id="app"></div>
+
+<div id="cartbar" class="cartbar" style="display:none;" onclick="openCart()"></div>
+
+<div class="tabbar">
+<div class="tab active" onclick="renderHome()">🏠</div>
+<div class="tab" onclick="openCart()">🛒</div>
+<div class="tab" onclick="profile()">👤</div>
+</div>
+
+<script>
+
+let cart=[];
+
+const restaurants=[
+{
+name:"Chez André",
+meta:"Cuisine locale • 20 min",
+menu:[
+{name:"Poulet braisé",price:9000},
+{name:"Frites",price:3000}
+]
+},
+{
+name:"Pizza Bujumbura",
+meta:"Pizza • 25 min",
+menu:[
+{name:"Pizza",price:12000},
+{name:"Boisson",price:2000}
+]
+}
+];
+
+// HOME
+function renderHome(){
+let html=`<div class="header">Commander</div>
+<input class="search" placeholder="🔍 Rechercher">`;
+
+restaurants.forEach((r,i)=>{
+html+=`
+<div class="restaurant" onclick="openRestaurant(${i})">
+<div class="name">${r.name}</div>
+<div class="meta">${r.meta}</div>
+</div>`;
+});
+
+document.getElementById("app").innerHTML=html;
+}
+
+// RESTAURANT
+function openRestaurant(i){
+let r=restaurants[i];
+
+let html=`<div class="header">${r.name}</div>`;
+
+r.menu.forEach(m=>{
+html+=`
+<div class="menu">
+${m.name}
+<div class="price">${m.price} BIF</div>
+<button class="btn" onclick="add('${m.name}',${m.price})">Ajouter</button>
+</div>`;
+});
+
+html+=`<div class="back" onclick="renderHome()">← Retour</div>`;
+
+document.getElementById("app").innerHTML=html;
+}
+
+// ADD
+function add(name,price){
+cart.push({name,price});
+updateCart();
+}
+
+// CART BAR
+function updateCart(){
+if(cart.length===0){
+cartbar.style.display="none";
+return;
+}
+
+let total=cart.reduce((a,b)=>a+b.price,0);
+
+cartbar.style.display="flex";
+cartbar.innerHTML=`${cart.length} article(s) • ${total} BIF`;
+}
+
+// CART PAGE
+function openCart(){
+let html=`<div class="header">Panier</div>`;
+
+let total=0;
+
+cart.forEach((i,index)=>{
+total+=i.price;
+html+=`
+<div class="menu">
+${i.name} - ${i.price} BIF
+<button onclick="remove(${index})">Supprimer</button>
+</div>`;
+});
+
+html+=`
+<div class="header">Total ${total} BIF</div>
+<button class="btn" onclick="checkout()">Commander</button>
+`;
+
+document.getElementById("app").innerHTML=html;
+}
+
+// REMOVE
+function remove(i){
+cart.splice(i,1);
+openCart();
+updateCart();
+}
+
+// CHECKOUT
+function checkout(){
+alert("Commande envoyée");
+cart=[];
+updateCart();
+renderHome();
+}
+
+// PROFILE
+function profile(){
+document.getElementById("app").innerHTML=`<div class="header">Profil</div>`;
+}
+
+// INIT
+renderHome();
+
+</script>
+
+</body>
+</html>
