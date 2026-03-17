@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>CizaFood+ - Restaurant</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+font-family:'Inter',sans-serif;
+background:#0B0B0C;
+color:#fff;
+}
+
+/* CONTAINER */
+.app{
+max-width:420px;
+margin:auto;
+min-height:100vh;
+padding:20px;
+padding-bottom:100px;
+}
+
+/* HEADER */
+.header{
+font-size:24px;
+font-weight:800;
+margin-bottom:20px;
+}
+
+/* CARD */
+.card{
+background:#151517;
+border:1px solid #1f1f23;
+padding:18px;
+border-radius:18px;
+margin-bottom:14px;
+}
+
+.title{
+font-size:16px;
+font-weight:700;
+margin-bottom:6px;
+}
+
+.meta{
+font-size:13px;
+color:#aaa;
+margin-bottom:10px;
+}
+
+/* STATUS */
+.status{
+font-size:13px;
+color:#D4AF37;
+margin-bottom:10px;
+}
+
+/* BUTTON */
+.btn{
+width:100%;
+padding:14px;
+border:none;
+border-radius:14px;
+background:#D4AF37;
+color:#000;
+font-weight:700;
+cursor:pointer;
+margin-top:8px;
+}
+
+/* TAB BAR */
+.tabbar{
+position:fixed;
+bottom:0;
+left:0;
+right:0;
+background:#0B0B0C;
+border-top:1px solid #1c1c1c;
+display:flex;
+justify-content:space-around;
+padding:12px;
+}
+
+.tab{
+color:#777;
+font-size:14px;
+}
+
+.active{
+color:#D4AF37;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app" id="app"></div>
+
+<div class="tabbar">
+<div class="tab active" onclick="loadOrders()">📦 Commandes</div>
+<div class="tab" onclick="menu()">🍽️ Menu</div>
+<div class="tab" onclick="profile()">👤 Profil</div>
+</div>
+
+<script>
+
+// COMMANDES SIMULÉES
+let orders=[
+{
+id:1,
+client:"Client - Rohero",
+items:["Poulet","Frites"],
+status:"En attente"
+},
+{
+id:2,
+client:"Client - Kinindo",
+items:["Pizza","Boisson"],
+status:"En attente"
+}
+];
+
+// LISTE COMMANDES
+function loadOrders(){
+
+let html=`<div class="header">Commandes</div>`;
+
+orders.forEach((o,i)=>{
+
+html+=`
+<div class="card">
+<div class="title">${o.client}</div>
+<div class="meta">${o.items.join(", ")}</div>
+<div class="status">${o.status}</div>
+
+${getActions(o.status,i)}
+
+</div>
+`;
+
+});
+
+document.getElementById("app").innerHTML=html;
+}
+
+// ACTIONS SELON STATUT
+function getActions(status,i){
+
+if(status==="En attente"){
+return `<button class="btn" onclick="accept(${i})">Accepter</button>`;
+}
+
+if(status==="Acceptée"){
+return `<button class="btn" onclick="prepare(${i})">Préparer</button>`;
+}
+
+if(status==="En préparation"){
+return `<button class="btn" onclick="ready(${i})">Prêt</button>`;
+}
+
+return "";
+}
+
+// ACTIONS
+function accept(i){
+orders[i].status="Acceptée";
+loadOrders();
+}
+
+function prepare(i){
+orders[i].status="En préparation";
+loadOrders();
+}
+
+function ready(i){
+orders[i].status="Prêt";
+loadOrders();
+}
+
+// MENU
+function menu(){
+document.getElementById("app").innerHTML=`
+<div class="header">Menu</div>
+<div class="card">Gestion du menu</div>
+`;
+}
+
+// PROFIL
+function profile(){
+document.getElementById("app").innerHTML=`
+<div class="header">Profil restaurant</div>
+<div class="card">Informations du restaurant</div>
+`;
+}
+
+// INIT
+loadOrders();
+
+</script>
+
+</body>
+</html>
