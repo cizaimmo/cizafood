@@ -8,97 +8,85 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
-
 body{
-  font-family:'Inter',sans-serif;
-  background:#0B0B0C;
-  color:#fff;
+margin:0;
+font-family:'Inter',sans-serif;
+background:#0B0B0C;
+color:#fff;
 }
 
-.main{
-  padding:40px 20px 100px;
-  text-align:center;
-}
+.screen{display:none;padding:20px;min-height:100vh;}
+.active{display:block;}
 
 .logo{
-  width:140px;
-  margin:40px auto 20px;
-  display:block;
+width:200px;
+margin:100px auto 40px;
+display:block;
 }
 
-h1{
-  font-size:22px;
-  margin-bottom:10px;
-}
-
-.subtitle{
-  color:#aaa;
-  margin-bottom:30px;
-}
+h1{text-align:center;margin-bottom:10px;}
+.subtitle{text-align:center;color:#aaa;margin-bottom:30px;}
 
 .btn{
-  width:100%;
-  padding:14px;
-  border-radius:14px;
-  border:none;
-  margin-top:12px;
-  font-weight:600;
+width:100%;
+padding:16px;
+border-radius:14px;
+border:none;
+margin-top:12px;
+font-weight:600;
+cursor:pointer;
 }
 
 .gold{background:#D4AF37;color:#000;}
 .dark{background:#151517;color:#fff;}
 
 .input{
-  width:100%;
-  padding:14px;
-  border-radius:12px;
-  border:none;
-  background:#151517;
-  color:#fff;
-  margin-top:10px;
+width:100%;
+padding:14px;
+border-radius:12px;
+border:none;
+background:#151517;
+color:#fff;
+margin-top:10px;
+}
+
+.upload{
+background:#151517;
+padding:14px;
+border-radius:12px;
+margin-top:10px;
+text-align:center;
+cursor:pointer;
+}
+
+.preview{
+margin-top:10px;
+max-width:100%;
+border-radius:10px;
 }
 
 .card{
-  background:#151517;
-  padding:18px;
-  border-radius:16px;
-  margin-top:15px;
-  text-align:left;
+background:#151517;
+padding:16px;
+border-radius:14px;
+margin-top:12px;
 }
 
 .footer{
-  margin-top:40px;
-  font-size:12px;
-  color:#888;
+text-align:center;
+font-size:12px;
+color:#888;
+margin-top:40px;
 }
 </style>
+</head>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<body>
 
-const firebaseConfig = {
-  apiKey:"XXXX",
-  authDomain:"XXXX",
-  projectId:"XXXX"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth();
-const db = getFirestore();
-
-let role = null;
-
-const UI = document.getElementById("app");
-
-// LANDING
-window.landing = function(){
-UI.innerHTML = `
+<!-- LANDING -->
+<div id="landing" class="screen active">
 <img src="https://raw.githubusercontent.com/cizaimmo/cizafood/d4e54f9e35499c7e929b38238a0ecb5bd94d2a25/F262698A-75D3-4960-B6DB-229091B6EDFF.png" class="logo">
 
-<h1>CizaFood+</h1>
 <div class="subtitle">Choisissez votre rôle</div>
 
 <button class="btn dark" onclick="selectRole('client')">👤 Commander</button>
@@ -108,116 +96,166 @@ UI.innerHTML = `
 <div class="footer">
 CizaFood+<br>Division de Ciza Group | Burundi 🇧🇮
 </div>
-`;
-}
+</div>
 
-// SELECT ROLE
-window.selectRole = function(r){
-role = r;
-loginUI();
-}
-
-// LOGIN
-window.loginUI = function(){
-UI.innerHTML = `
+<!-- LOGIN -->
+<div id="login" class="screen">
 <h1>Connexion</h1>
 
 <input id="email" class="input" placeholder="Email">
-<input id="pass" type="password" class="input" placeholder="Mot de passe">
+<input id="password" type="password" class="input" placeholder="Mot de passe">
 
 <button class="btn gold" onclick="login()">Se connecter</button>
-<button class="btn dark" onclick="signupUI()">Créer un compte</button>
-`;
+<button class="btn dark" onclick="show('signup')">Créer compte</button>
+</div>
+
+<!-- SIGNUP -->
+<div id="signup" class="screen">
+<h1>Créer un compte</h1>
+
+<input id="name" class="input" placeholder="Nom">
+<input id="phone" class="input" placeholder="Téléphone">
+<input id="email2" class="input" placeholder="Email">
+<input id="password2" type="password" class="input" placeholder="Mot de passe">
+
+<div id="extra"></div>
+
+<button class="btn gold" onclick="signup()">Créer</button>
+<button class="btn dark" onclick="show('login')">Retour</button>
+</div>
+
+<!-- APP CLIENT -->
+<div id="client" class="screen">
+<h1>Accueil</h1>
+
+<div class="card">🍔 Burger House<br><span style="color:#D4AF37">8000 BIF</span></div>
+<div class="card">🍕 Pizza Bujumbura<br><span style="color:#D4AF37">10000 BIF</span></div>
+</div>
+
+<!-- APP DRIVER -->
+<div id="driver" class="screen">
+<h1>Dashboard Chauffeur</h1>
+<div class="card">Aucune livraison pour le moment</div>
+</div>
+
+<!-- APP RESTAURANT -->
+<div id="restaurant" class="screen">
+<h1>Dashboard Restaurant</h1>
+<div class="card">Aucune commande</div>
+</div>
+
+<script>
+
+let role = null;
+
+// ROUTING
+function show(id){
+document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+document.getElementById(id).classList.add('active');
 }
 
-// SIGNUP UI (MULTI ROLE)
-window.signupUI = function(){
+// ROLE
+function selectRole(r){
+role = r;
+show("login");
+}
 
-let extra = "";
+// LOGIN VALIDATION
+function login(){
+let email = document.getElementById("email").value;
+let pass = document.getElementById("password").value;
+
+if(!email.includes("@")){
+alert("Email invalide");
+return;
+}
+
+if(pass.length < 4){
+alert("Mot de passe trop court");
+return;
+}
+
+redirect();
+}
+
+// SIGNUP UI DYNAMIQUE
+document.getElementById("signup").addEventListener("click", ()=>{
+let extra = document.getElementById("extra");
 
 if(role==="driver"){
-extra = `
-<input id="vehicle" class="input" placeholder="Véhicule">
-<input id="plate" class="input" placeholder="Plaque">
+extra.innerHTML = `
+<input class="input" placeholder="Numéro permis">
+<div class="upload" onclick="upload(this)">📸 Photo permis</div>
+<div class="upload" onclick="upload(this)">🛡 Assurance</div>
+<input class="input" placeholder="Véhicule">
+<input class="input" placeholder="Plaque">
 `;
 }
 
 if(role==="restaurant"){
-extra = `
-<input id="restaurant" class="input" placeholder="Nom du restaurant">
-<input id="address" class="input" placeholder="Adresse">
+extra.innerHTML = `
+<input class="input" placeholder="Nom restaurant">
+<input class="input" placeholder="Adresse">
+<input class="input" placeholder="Type d’activité">
 `;
 }
 
-UI.innerHTML = `
-<h1>Créer compte</h1>
-
-<input id="name" class="input" placeholder="Nom">
-<input id="phone" class="input" placeholder="Téléphone">
-<input id="email" class="input" placeholder="Email">
-<input id="pass" type="password" class="input" placeholder="Mot de passe">
-
-${extra}
-
-<button class="btn gold" onclick="signup()">Créer</button>
-<button class="btn dark" onclick="loginUI()">Retour</button>
+if(role==="client"){
+extra.innerHTML = `
+<div class="upload" onclick="upload(this)">📸 Photo profil</div>
 `;
 }
 
-// SIGNUP
-window.signup = async function(){
-const user = await createUserWithEmailAndPassword(auth,email.value,pass.value);
-
-await setDoc(doc(db,"users",user.user.uid),{
-role,
-name:name.value,
-phone:phone.value
 });
 
-home();
+// SIGNUP VALIDATION
+function signup(){
+let email = document.getElementById("email2").value;
+let pass = document.getElementById("password2").value;
+
+if(!email.includes("@")){
+alert("Email invalide");
+return;
 }
 
-// LOGIN
-window.login = async function(){
-await signInWithEmailAndPassword(auth,email.value,pass.value);
-home();
+if(pass.length < 4){
+alert("Mot de passe trop court");
+return;
 }
 
-// HOME (CLIENT ONLY UI)
-window.home = function(){
-UI.innerHTML = `
-<h1>Accueil</h1>
-
-<input class="input" placeholder="🔍 Rechercher">
-
-<div class="card">
-🍔 Burger House<br>
-<span style="color:#D4AF37;">8000 BIF</span>
-<button class="btn gold" onclick="add()">Ajouter</button>
-</div>
-
-<div class="card">
-🍕 Pizza Bujumbura<br>
-<span style="color:#D4AF37;">10000 BIF</span>
-<button class="btn gold" onclick="add()">Ajouter</button>
-</div>
-`;
+redirect();
 }
 
-window.add = function(){
-alert("Ajouté au panier");
+// REDIRECTION
+function redirect(){
+if(role==="client") show("client");
+if(role==="driver") show("driver");
+if(role==="restaurant") show("restaurant");
 }
 
-// INIT
-onAuthStateChanged(auth,user=>{
-if(user) home();
-else landing();
-});
+// UPLOAD PREVIEW
+function upload(el){
+let input = document.createElement("input");
+input.type="file";
+
+input.onchange = e=>{
+let file = e.target.files[0];
+let reader = new FileReader();
+
+reader.onload = ()=>{
+let img = document.createElement("img");
+img.src = reader.result;
+img.className = "preview";
+el.appendChild(img);
+};
+
+reader.readAsDataURL(file);
+};
+
+input.click();
+}
 
 </script>
-</head>
 
-<body>
-<div id="app" class="main"></div>
 </body>
 </html>
