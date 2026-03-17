@@ -3,9 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>CizaFood+</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B0B0C">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -16,7 +23,6 @@ body{
   color:#fff;
 }
 
-/* HEADER */
 .header{
   position:fixed;
   top:0;
@@ -27,53 +33,40 @@ body{
   justify-content:space-between;
   align-items:center;
   border-bottom:1px solid #1c1c1c;
-  z-index:1000;
 }
 
-.logo{
-  height:28px;
-}
+.logo{height:28px;}
 
-.menu-btn{
-  font-size:22px;
-  cursor:pointer;
-}
-
-/* SIDEBAR */
-.sidebar{
-  position:fixed;
-  left:-260px;
-  top:0;
-  width:260px;
-  height:100%;
-  background:#111;
-  padding:20px;
-  transition:0.3s;
-  z-index:2000;
-}
-
-.sidebar.active{
-  left:0;
-}
-
-.sidebar h3{
-  margin-bottom:20px;
-}
-
-.sidebar a{
-  display:block;
-  color:#fff;
-  text-decoration:none;
-  padding:12px 0;
-  border-bottom:1px solid #222;
-}
-
-/* MAIN */
 .main{
   padding:80px 16px 80px;
 }
 
-/* FOOTER */
+input{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:10px;
+  background:#151517;
+  color:#fff;
+  margin-bottom:10px;
+}
+
+button{
+  background:#D4AF37;
+  border:none;
+  padding:12px;
+  border-radius:10px;
+  width:100%;
+  margin-top:10px;
+}
+
+.card{
+  background:#151517;
+  padding:16px;
+  border-radius:14px;
+  margin-top:10px;
+}
+
 .footer{
   text-align:center;
   font-size:12px;
@@ -81,91 +74,194 @@ body{
   margin-top:40px;
 }
 
-/* BOTTOM NAV */
 .bottom-nav{
   position:fixed;
   bottom:0;
   width:100%;
-  background:#0B0B0C;
   display:flex;
   justify-content:space-around;
+  background:#0B0B0C;
   border-top:1px solid #1c1c1c;
   padding:10px 0;
 }
-
-.bottom-nav div{
-  text-align:center;
-  font-size:12px;
-  color:#aaa;
-  cursor:pointer;
-}
-
-.bottom-nav div.active{
-  color:#D4AF37;
-}
 </style>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+
 </head>
 
 <body>
 
-<!-- SIDEBAR -->
-<div class="sidebar" id="sidebar">
-  <h3>Menu</h3>
-  <a href="#">Profil</a>
-  <a href="#">Paramètres</a>
-  <a href="#">Confidentialité</a>
-  <a href="#">Conditions</a>
-  <a href="#">Support</a>
-  <a href="#">Déconnexion</a>
-</div>
-
-<!-- HEADER -->
 <div class="header">
-  <img src="logo-dark.png" class="logo">
-  <div class="menu-btn" onclick="toggleMenu()">☰</div>
+  <img src="https://raw.githubusercontent.com/cizaimmo/cizafood/main/F262698A-75D3-4960-B6DB-229091B6EDFF.png" class="logo">
 </div>
 
-<!-- MAIN -->
-<div class="main">
+<div class="main" id="app"></div>
 
-  <h2>Bienvenue 👋</h2>
-  <p style="color:#aaa;margin-top:10px;">
-    Recherchez un restaurant ou un plat
-  </p>
-
-  <!-- Exemple contenu -->
-  <div style="margin-top:20px;">
-    <div style="background:#151517;padding:16px;border-radius:12px;margin-bottom:12px;">
-      🍔 Restaurant Burger House  
-      <br><span style="color:#aaa;">20-30 min</span>
-    </div>
-
-    <div style="background:#151517;padding:16px;border-radius:12px;">
-      🍕 Pizza Express  
-      <br><span style="color:#aaa;">15-25 min</span>
-    </div>
-  </div>
-
-  <!-- FOOTER -->
-  <div class="footer">
-    CizaFood+<br>
-    Division de Ciza Group | Burundi 🇧🇮
-  </div>
-
-</div>
-
-<!-- BOTTOM NAV -->
 <div class="bottom-nav">
-  <div class="active">🏠<br>Accueil</div>
-  <div>🔍<br>Recherche</div>
-  <div>🛒<br>Commandes</div>
-  <div>👤<br>Profil</div>
+  <div onclick="home()">🏠</div>
+  <div onclick="openCart()">🛒</div>
+  <div onclick="profile()">👤</div>
 </div>
 
 <script>
-function toggleMenu(){
-  document.getElementById("sidebar").classList.toggle("active");
+
+// FIREBASE CONFIG
+const firebaseConfig = {
+  apiKey: "XXXX",
+  authDomain: "XXXX",
+  projectId: "XXXX"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// STATE
+let cart = [];
+
+// LOGIN
+function loginUI(){
+  app.innerHTML = `
+    <h2>Connexion</h2>
+    <input id="email" placeholder="Email">
+    <input id="pass" type="password" placeholder="Mot de passe">
+    <button onclick="login()">Se connecter</button>
+    <button onclick="signup()">Créer compte</button>
+  `;
 }
+
+function login(){
+  auth.signInWithEmailAndPassword(email.value, pass.value)
+  .then(home)
+  .catch(e=>alert(e.message));
+}
+
+function signup(){
+  auth.createUserWithEmailAndPassword(email.value, pass.value)
+  .then(home)
+  .catch(e=>alert(e.message));
+}
+
+// HOME
+function home(){
+  app.innerHTML = `
+    <input id="search" placeholder="🔍 Rechercher...">
+
+    <div class="card" onclick="openRestaurant()">
+      🍔 Burger House<br><small>20 min</small>
+    </div>
+
+    <div class="card">
+      🍕 Pizza Kigali<br><small>15 min</small>
+    </div>
+
+    <div class="footer">
+      CizaFood+<br>
+      Division de Ciza Group | Burundi 🇧🇮
+    </div>
+  `;
+}
+
+// RESTAURANT
+function openRestaurant(){
+  app.innerHTML = `
+    <h2>Menu</h2>
+
+    <div class="card">
+      Burger - 5000 RWF
+      <button onclick="addToCart('Burger',5000)">Ajouter</button>
+    </div>
+
+    <div class="card">
+      Frites - 2000 RWF
+      <button onclick="addToCart('Frites',2000)">Ajouter</button>
+    </div>
+
+    <button onclick="home()">Retour</button>
+  `;
+}
+
+// CART
+function addToCart(name,price){
+  cart.push({name,price});
+  alert("Ajouté");
+}
+
+function openCart(){
+  let total=0;
+
+  let html = `<h2>Panier</h2>`;
+
+  cart.forEach((i,idx)=>{
+    total+=i.price;
+    html+=`
+      <div class="card">
+        ${i.name} - ${i.price} RWF
+        <button onclick="removeItem(${idx})">Supprimer</button>
+      </div>
+    `;
+  });
+
+  html+=`
+    <h3>Total ${total} RWF</h3>
+    <button onclick="checkout(${total})">Commander</button>
+  `;
+
+  app.innerHTML = html;
+}
+
+function removeItem(i){
+  cart.splice(i,1);
+  openCart();
+}
+
+// ORDER
+function checkout(total){
+  const user = auth.currentUser;
+
+  db.collection("orders").add({
+    uid:user.uid,
+    items:cart,
+    total,
+    status:"pending",
+    createdAt:new Date()
+  });
+
+  cart=[];
+  alert("Commande envoyée ✅");
+  home();
+}
+
+// PROFILE
+function profile(){
+  app.innerHTML = `
+    <h2>Profil</h2>
+
+    <button onclick="deleteAccount()">Supprimer mon compte</button>
+  `;
+}
+
+// DELETE ACCOUNT (REAL)
+function deleteAccount(){
+  const user = auth.currentUser;
+
+  user.delete().then(()=>{
+    alert("Compte supprimé");
+    loginUI();
+  }).catch(e=>{
+    alert("Reconnecte-toi pour supprimer");
+  });
+}
+
+// INIT
+auth.onAuthStateChanged(user=>{
+  if(user) home();
+  else loginUI();
+});
+
 </script>
 
 </body>
