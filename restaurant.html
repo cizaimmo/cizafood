@@ -16,7 +16,6 @@ background:#0B0B0C;
 color:#fff;
 }
 
-/* CONTAINER */
 .app{
 max-width:420px;
 margin:auto;
@@ -25,14 +24,12 @@ padding:20px;
 padding-bottom:100px;
 }
 
-/* HEADER */
 .header{
 font-size:24px;
 font-weight:800;
 margin-bottom:20px;
 }
 
-/* CARD */
 .card{
 background:#151517;
 border:1px solid #1f1f23;
@@ -53,14 +50,12 @@ color:#aaa;
 margin-bottom:10px;
 }
 
-/* STATUS */
 .status{
 font-size:13px;
 color:#D4AF37;
 margin-bottom:10px;
 }
 
-/* BUTTON */
 .btn{
 width:100%;
 padding:14px;
@@ -73,7 +68,6 @@ cursor:pointer;
 margin-top:8px;
 }
 
-/* TAB BAR */
 .tabbar{
 position:fixed;
 bottom:0;
@@ -86,14 +80,8 @@ justify-content:space-around;
 padding:12px;
 }
 
-.tab{
-color:#777;
-font-size:14px;
-}
-
-.active{
-color:#D4AF37;
-}
+.tab{color:#777;font-size:14px;}
+.active{color:#D4AF37;}
 </style>
 </head>
 
@@ -107,38 +95,37 @@ color:#D4AF37;
 <div class="tab" onclick="profile()">👤 Profil</div>
 </div>
 
+<!-- ORDERS -->
+<script src="orders.js"></script>
+
 <script>
 
-// COMMANDES SIMULÉES
-let orders=[
-{
-id:1,
-client:"Client - Rohero",
-items:["Poulet","Frites"],
-status:"En attente"
-},
-{
-id:2,
-client:"Client - Kinindo",
-items:["Pizza","Boisson"],
-status:"En attente"
-}
-];
+// ⚠️ SIMULATION IDENTITÉ RESTAURANT
+const restaurantName = "Chez André";
 
 // LISTE COMMANDES
 function loadOrders(){
 
+let all = getOrders();
+
+// filtrer commandes de CE restaurant
+let orders = all.filter(o => o.restaurant === restaurantName);
+
 let html=`<div class="header">Commandes</div>`;
 
-orders.forEach((o,i)=>{
+if(orders.length===0){
+html+=`<div class="card">Aucune commande</div>`;
+}
+
+orders.forEach(o=>{
 
 html+=`
 <div class="card">
 <div class="title">${o.client}</div>
-<div class="meta">${o.items.join(", ")}</div>
-<div class="status">${o.status}</div>
+<div class="meta">${o.items.map(i=>i.name).join(", ")}</div>
+<div class="status">${getStatusLabel(o.status)}</div>
 
-${getActions(o.status,i)}
+${getActions(o)}
 
 </div>
 `;
@@ -148,37 +135,50 @@ ${getActions(o.status,i)}
 document.getElementById("app").innerHTML=html;
 }
 
-// ACTIONS SELON STATUT
-function getActions(status,i){
+// LABEL STATUS
+function getStatusLabel(status){
 
-if(status==="En attente"){
-return `<button class="btn" onclick="accept(${i})">Accepter</button>`;
+if(status==="pending") return "En attente";
+if(status==="accepted") return "Acceptée";
+if(status==="preparing") return "En préparation";
+if(status==="ready") return "Prêt";
+if(status==="picked") return "En livraison";
+if(status==="delivered") return "Livré";
+
+return status;
 }
 
-if(status==="Acceptée"){
-return `<button class="btn" onclick="prepare(${i})">Préparer</button>`;
+// ACTIONS
+function getActions(o){
+
+if(o.status==="pending"){
+return `<button class="btn" onclick="accept(${o.id})">Accepter</button>`;
 }
 
-if(status==="En préparation"){
-return `<button class="btn" onclick="ready(${i})">Prêt</button>`;
+if(o.status==="accepted"){
+return `<button class="btn" onclick="prepare(${o.id})">Préparer</button>`;
+}
+
+if(o.status==="preparing"){
+return `<button class="btn" onclick="ready(${o.id})">Marquer prêt</button>`;
 }
 
 return "";
 }
 
-// ACTIONS
-function accept(i){
-orders[i].status="Acceptée";
+// ACTIONS UPDATE
+function accept(id){
+updateOrder(id,{status:"accepted"});
 loadOrders();
 }
 
-function prepare(i){
-orders[i].status="En préparation";
+function prepare(id){
+updateOrder(id,{status:"preparing"});
 loadOrders();
 }
 
-function ready(i){
-orders[i].status="Prêt";
+function ready(id){
+updateOrder(id,{status:"ready"});
 loadOrders();
 }
 
@@ -186,7 +186,7 @@ loadOrders();
 function menu(){
 document.getElementById("app").innerHTML=`
 <div class="header">Menu</div>
-<div class="card">Gestion du menu</div>
+<div class="card">Gestion du menu (à connecter plus tard)</div>
 `;
 }
 
