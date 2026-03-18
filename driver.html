@@ -95,19 +95,59 @@ padding:12px;
 <div class="tab" onclick="profile()">👤 Profil</div>
 </div>
 
-<!-- ORDERS -->
 <script src="orders.js"></script>
 
 <script>
 
-// CHARGER COMMANDES RÉELLES
+// 🔥 GPS LIVE
+let watchId = null;
+
+function startGPS(){
+
+if(!navigator.geolocation){
+alert("GPS non supporté");
+return;
+}
+
+watchId = navigator.geolocation.watchPosition(pos=>{
+
+let lat = pos.coords.latitude;
+let lng = pos.coords.longitude;
+
+// mettre à jour commandes du chauffeur
+let myOrders = getOrders().filter(o => o.driver==="me" && o.status!=="delivered");
+
+myOrders.forEach(o=>{
+updateOrder(o.id,{
+driverLat:lat,
+driverLng:lng
+});
+});
+
+}, err=>{
+console.log("Erreur GPS", err);
+},{
+enableHighAccuracy:true,
+maximumAge:5000,
+timeout:5000
+});
+
+}
+
+// STOP GPS (option pro)
+function stopGPS(){
+if(watchId){
+navigator.geolocation.clearWatch(watchId);
+}
+}
+
+// COMMANDES
 function loadOrders(){
 
 let all = getOrders();
 
 let html=`<div class="header">Courses disponibles</div>`;
 
-// filtrer commandes disponibles OU en cours chauffeur
 let list = all.filter(o =>
 o.status==="pending" ||
 (o.status!=="delivered" && o.driver==="me")
@@ -133,7 +173,7 @@ ${renderButton(o)}
 document.getElementById("app").innerHTML=html;
 }
 
-// BOUTON DYNAMIQUE
+// BOUTONS
 function renderButton(o){
 
 if(o.status==="pending"){
@@ -151,7 +191,7 @@ return `<button class="btn" onclick="deliver(${o.id})">Livré</button>`;
 return "";
 }
 
-// ACCEPTER
+// ACTIONS
 function accept(id){
 updateOrder(id,{
 status:"accepted",
@@ -160,7 +200,6 @@ driver:"me"
 loadOrders();
 }
 
-// PICKUP
 function pickup(id){
 updateOrder(id,{
 status:"picked"
@@ -168,7 +207,6 @@ status:"picked"
 loadOrders();
 }
 
-// DELIVER
 function deliver(id){
 updateOrder(id,{
 status:"delivered"
@@ -210,6 +248,7 @@ document.getElementById("app").innerHTML=`
 
 // INIT
 loadOrders();
+startGPS(); // 🔥 ACTIVER GPS
 
 </script>
 
