@@ -7,6 +7,10 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
+<!-- 🔥 MAP -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 
@@ -115,6 +119,18 @@ padding:12px;
 
 .tab{color:#777;font-size:14px;}
 .active{color:#D4AF37;}
+
+.step{
+background:#151517;
+padding:14px;
+border-radius:12px;
+margin-bottom:8px;
+}
+
+.activeStep{
+border:1px solid #D4AF37;
+background:#1f1a0a;
+}
 </style>
 </head>
 
@@ -130,7 +146,6 @@ padding:12px;
 <div class="tab" onclick="profile()">👤</div>
 </div>
 
-<!-- ORDERS -->
 <script src="orders.js"></script>
 
 <script>
@@ -211,11 +226,11 @@ cartbar.style.display="flex";
 cartbar.innerHTML=`${cart.length} article(s) • ${total} BIF`;
 }
 
-// CART PAGE
+// CART
 function openCart(){
 
 if(cart.length===0){
-document.getElementById("app").innerHTML=`
+app.innerHTML=`
 <div class="header">Panier vide</div>
 <div class="back" onclick="renderHome()">← Retour</div>
 `;
@@ -223,7 +238,6 @@ return;
 }
 
 let html=`<div class="header">Panier</div>`;
-
 let total=0;
 
 cart.forEach((i,index)=>{
@@ -238,10 +252,9 @@ ${i.name} - ${i.price} BIF
 html+=`
 <div class="header">Total ${total} BIF</div>
 <button class="btn" onclick="checkout(${total})">Commander</button>
-<div class="back" onclick="renderHome()">← Continuer</div>
 `;
 
-document.getElementById("app").innerHTML=html;
+app.innerHTML=html;
 }
 
 // REMOVE
@@ -251,7 +264,7 @@ openCart();
 updateCart();
 }
 
-// CHECKOUT (CONNECTÉ AUX ORDERS)
+// CHECKOUT → TRACK
 function checkout(total){
 
 createOrder({
@@ -264,18 +277,71 @@ total:total
 cart=[];
 updateCart();
 
-document.getElementById("app").innerHTML=`
-<div class="header">Commande envoyée</div>
-<div class="back" onclick="renderHome()">← Retour accueil</div>
-`;
+trackOrder();
 }
+
+// TRACKING + MAP
+function trackOrder(){
+
+let orders=getOrders();
+let last=orders[orders.length-1];
+
+if(!last){
+app.innerHTML=`<div class="header">Aucune commande</div>`;
+return;
+}
+
+let html=`<div class="header">Suivi commande</div>
+<div id="map" style="height:220px;border-radius:16px;margin-bottom:10px;"></div>`;
+
+let steps=["pending","accepted","preparing","ready","picked","delivered"];
+
+steps.forEach(s=>{
+let active=isStepActive(last.status,s);
+html+=`<div class="step ${active?"activeStep":""}">${s}</div>`;
+});
+
+app.innerHTML=html;
+
+initMap(last);
+}
+
+// MAP
+let map, marker;
+
+function initMap(order){
+
+map = L.map('map').setView([-3.3822, 29.3644], 13);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+// client
+L.marker([-3.3822,29.3644]).addTo(map).bindPopup("Client");
+
+// chauffeur
+if(order.driverLat){
+marker=L.marker([order.driverLat,order.driverLng]).addTo(map).bindPopup("Chauffeur");
+}else{
+marker=L.marker([-3.39,29.36]).addTo(map).bindPopup("Chauffeur");
+}
+}
+
+// STEP
+function isStepActive(current,step){
+const order=["pending","accepted","preparing","ready","picked","delivered"];
+return order.indexOf(step)<=order.indexOf(current);
+}
+
+// AUTO REFRESH
+setInterval(()=>{
+if(document.getElementById("map")){
+trackOrder();
+}
+},3000);
 
 // PROFILE
 function profile(){
-document.getElementById("app").innerHTML=`
-<div class="header">Profil</div>
-<div class="back" onclick="renderHome()">← Retour</div>
-`;
+app.innerHTML=`<div class="header">Profil</div>`;
 }
 
 // INIT
