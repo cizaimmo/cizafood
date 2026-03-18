@@ -16,7 +16,6 @@ background:#0B0B0C;
 color:#fff;
 }
 
-/* CONTAINER */
 .app{
 max-width:420px;
 margin:auto;
@@ -25,14 +24,12 @@ padding:20px;
 padding-bottom:100px;
 }
 
-/* HEADER */
 .header{
 font-size:24px;
 font-weight:800;
 margin-bottom:15px;
 }
 
-/* SEARCH */
 .search{
 width:100%;
 padding:16px;
@@ -44,7 +41,6 @@ margin-bottom:20px;
 outline:none;
 }
 
-/* CARD RESTO */
 .restaurant{
 background:#151517;
 border:1px solid #1f1f23;
@@ -55,22 +51,11 @@ cursor:pointer;
 transition:0.2s;
 }
 
-.restaurant:active{
-transform:scale(0.97);
-}
+.restaurant:active{transform:scale(0.97);}
 
-.name{
-font-size:17px;
-font-weight:700;
-margin-bottom:5px;
-}
+.name{font-size:17px;font-weight:700;margin-bottom:5px;}
+.meta{font-size:13px;color:#aaa;}
 
-.meta{
-font-size:13px;
-color:#aaa;
-}
-
-/* MENU */
 .menu{
 background:#151517;
 padding:16px;
@@ -95,7 +80,6 @@ font-weight:700;
 cursor:pointer;
 }
 
-/* BACK */
 .back{
 margin-top:20px;
 color:#D4AF37;
@@ -103,7 +87,6 @@ cursor:pointer;
 font-weight:600;
 }
 
-/* CART BAR */
 .cartbar{
 position:fixed;
 bottom:80px;
@@ -118,7 +101,6 @@ justify-content:space-between;
 font-weight:700;
 }
 
-/* TAB BAR */
 .tabbar{
 position:fixed;
 bottom:0;
@@ -131,14 +113,8 @@ justify-content:space-around;
 padding:12px;
 }
 
-.tab{
-color:#777;
-font-size:14px;
-}
-
-.active{
-color:#D4AF37;
-}
+.tab{color:#777;font-size:14px;}
+.active{color:#D4AF37;}
 </style>
 </head>
 
@@ -153,6 +129,9 @@ color:#D4AF37;
 <div class="tab" onclick="openCart()">🛒</div>
 <div class="tab" onclick="profile()">👤</div>
 </div>
+
+<!-- ORDERS -->
+<script src="orders.js"></script>
 
 <script>
 
@@ -234,6 +213,15 @@ cartbar.innerHTML=`${cart.length} article(s) • ${total} BIF`;
 
 // CART PAGE
 function openCart(){
+
+if(cart.length===0){
+document.getElementById("app").innerHTML=`
+<div class="header">Panier vide</div>
+<div class="back" onclick="renderHome()">← Retour</div>
+`;
+return;
+}
+
 let html=`<div class="header">Panier</div>`;
 
 let total=0;
@@ -249,7 +237,8 @@ ${i.name} - ${i.price} BIF
 
 html+=`
 <div class="header">Total ${total} BIF</div>
-<button class="btn" onclick="checkout()">Commander</button>
+<button class="btn" onclick="checkout(${total})">Commander</button>
+<div class="back" onclick="renderHome()">← Continuer</div>
 `;
 
 document.getElementById("app").innerHTML=html;
@@ -262,17 +251,31 @@ openCart();
 updateCart();
 }
 
-// CHECKOUT
-function checkout(){
-alert("Commande envoyée");
+// CHECKOUT (CONNECTÉ AUX ORDERS)
+function checkout(total){
+
+createOrder({
+restaurant:"Chez André",
+client:"Client",
+items:cart,
+total:total
+});
+
 cart=[];
 updateCart();
-renderHome();
+
+document.getElementById("app").innerHTML=`
+<div class="header">Commande envoyée</div>
+<div class="back" onclick="renderHome()">← Retour accueil</div>
+`;
 }
 
 // PROFILE
 function profile(){
-document.getElementById("app").innerHTML=`<div class="header">Profil</div>`;
+document.getElementById("app").innerHTML=`
+<div class="header">Profil</div>
+<div class="back" onclick="renderHome()">← Retour</div>
+`;
 }
 
 // INIT
