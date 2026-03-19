@@ -415,7 +415,6 @@ renderTracking(o);
 });
 }
 
-
 function renderTracking(o){
 
 let steps={
@@ -429,16 +428,18 @@ delivered:"Livré"
 
 app.innerHTML=`
 
+<!-- HEADER AVEC RETOUR -->
 <div style="display:flex;align-items:center;padding:20px;gap:10px;">
 
 <button onclick="renderHome()" 
 style="
-background:#151517;
-border:none;
+background:#000;
+border:1px solid #333;
 color:#fff;
-padding:10px 14px;
-border-radius:12px;
-font-size:16px;
+width:40px;
+height:40px;
+border-radius:50%;
+font-size:18px;
 ">
 ←
 </button>
@@ -454,7 +455,9 @@ ${steps[o.status] || "En cours"}
 </div>
 
 <div style="font-size:13px;color:#aaa;margin-top:5px;">
-Votre commande est en traitement
+${o.status==="picked" ? "Votre chauffeur arrive..." :
+o.status==="delivered" ? "Commande livrée 🍔" :
+"Votre commande est en traitement"}
 </div>
 </div>
 
@@ -484,14 +487,25 @@ o.driverLat || o.clientLat+0.01,
 o.driverLng || o.clientLng+0.01
 ];
 
+// ICONS (ULTRA PRO)
+let clientIcon=L.icon({
+iconUrl:"https://cdn-icons-png.flaticon.com/512/64/64113.png",
+iconSize:[30,30]
+});
+
+let driverIcon=L.icon({
+iconUrl:"https://cdn-icons-png.flaticon.com/512/744/744465.png",
+iconSize:[35,35]
+});
+
 // MARKERS
-L.marker(client).addTo(map).bindPopup("Client");
-L.marker(driver).addTo(map).bindPopup("Chauffeur");
+L.marker(client,{icon:clientIcon}).addTo(map);
+L.marker(driver,{icon:driverIcon}).addTo(map);
 
 // LIGNE
-L.polyline([driver,client]).addTo(map);
+L.polyline([driver,client],{color:"#D4AF37",weight:4}).addTo(map);
 }
-  
+
 // PROFIL PREMIUM
 window.profile=function(){
 
