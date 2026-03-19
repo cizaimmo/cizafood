@@ -2,294 +2,121 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>CizaFood+ - Chauffeur</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ciza Driver</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-
-<!-- 🔥 FIREBASE -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
-
-body{
-font-family:'Inter',sans-serif;
-background:#0B0B0C;
-color:#fff;
-}
-
-.app{
-max-width:420px;
-margin:auto;
-min-height:100vh;
-padding:20px;
-padding-bottom:100px;
-}
-
-.header{
-font-size:24px;
-font-weight:800;
-margin-bottom:20px;
-}
-
-.card{
-background:#151517;
-border:1px solid #1f1f23;
-padding:18px;
-border-radius:18px;
-margin-bottom:14px;
-}
-
-.title{
-font-size:16px;
-font-weight:700;
-margin-bottom:6px;
-}
-
-.meta{
-font-size:13px;
-color:#aaa;
-margin-bottom:10px;
-}
-
+body{margin:0;background:#0B0B0C;color:#fff;font-family:Arial;}
+#map{height:60vh;}
 .btn{
 width:100%;
-padding:14px;
+padding:16px;
 border:none;
-border-radius:14px;
 background:#D4AF37;
 color:#000;
-font-weight:700;
-cursor:pointer;
+font-weight:bold;
 margin-top:10px;
 }
-
-.status{
-font-size:13px;
-color:#D4AF37;
-margin-top:8px;
-}
-
-.tabbar{
-position:fixed;
-bottom:0;
-left:0;
-right:0;
-background:#0B0B0C;
-border-top:1px solid #1c1c1c;
-display:flex;
-justify-content:space-around;
-padding:12px;
-}
-
-.tab{color:#777;font-size:14px;}
-.active{color:#D4AF37;}
+.card{padding:15px;}
 </style>
 </head>
 
 <body>
 
-<div class="app" id="app"></div>
+<div id="map"></div>
 
-<div class="tabbar">
-<div class="tab active" onclick="loadOrders()">📦 Courses</div>
-<div class="tab" onclick="history()">📜 Historique</div>
-<div class="tab" onclick="profile()">👤 Profil</div>
+<div class="card">
+<button class="btn" onclick="start()">📍 Activer GPS</button>
+<button class="btn" onclick="accept()">✅ Accepter course</button>
+<button class="btn" onclick="pickup()">🚗 En route</button>
+<button class="btn" onclick="deliver()">📦 Livré</button>
 </div>
 
-<script>
+<script type="module">
 
-/// 🔥 FIREBASE INIT
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 const firebaseConfig = {
-  apiKey: "AIzaSyA-Dh3VguPXVk27DwOkMjRbYIXEhrEPcsM",
-  authDomain: "cizafood.firebaseapp.com",
-  projectId: "cizafood",
-  storageBucket: "cizafood.firebasestorage.app",
-  messagingSenderId: "695527669049",
-  appId: "1:695527669049:web:256ddb7aaf2af2df293ce8"
+apiKey: "AIzaSyA-Dh3VguPXVk27DwOkMjRbYIXEhrEPcsM",
+authDomain: "cizafood.firebaseapp.com",
+projectId: "cizafood"
 };
 
-firebase.initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-const db = firebase.firestore();
-const auth = firebase.auth();
+let currentOrderId = null;
+let myLat = -3.38;
+let myLng = 29.36;
+let map;
 
-auth.signInAnonymously();
+// MAP INIT
+map = L.map('map').setView([myLat,myLng],13);
 
-let myUid = null;
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-auth.onAuthStateChanged(user=>{
-  if(user){
-    myUid = user.uid;
-    startGPS();
-    listenOrders();
-  }
-});
+let marker = L.marker([myLat,myLng]).addTo(map);
 
-/// 🔥 FIRESTORE
-function updateOrder(id,data){
-  return db.collection("orders").doc(id).update(data);
-}
+// GPS LIVE
+function start(){
+navigator.geolocation.watchPosition(pos=>{
+myLat = pos.coords.latitude;
+myLng = pos.coords.longitude;
 
-function listenOrders(){
+marker.setLatLng([myLat,myLng]);
+map.setView([myLat,myLng]);
 
-db.collection("orders").onSnapshot(snapshot=>{
-
-let orders=[];
-
-snapshot.forEach(doc=>{
-orders.push({id:doc.id,...doc.data()});
-});
-
-renderOrders(orders);
-
-});
-
-}
-
-/// 🔥 GPS LIVE
-let watchId = null;
-
-function startGPS(){
-
-if(!navigator.geolocation){
-alert("GPS non supporté");
-return;
-}
-
-watchId = navigator.geolocation.watchPosition(pos=>{
-
-let lat = pos.coords.latitude;
-let lng = pos.coords.longitude;
-
-// 🔥 update uniquement MES commandes
-db.collection("orders")
-.where("driverUid","==",myUid)
-.where("status","!=","delivered")
-.get()
-.then(snapshot=>{
-snapshot.forEach(doc=>{
-doc.ref.update({
-driverLat:lat,
-driverLng:lng
-});
-});
-});
-
-},{
-enableHighAccuracy:true
-});
-
-}
-
-/// 🔥 UI
-function renderOrders(all){
-
-let html=`<div class="header">Courses disponibles</div>`;
-
-let list = all.filter(o =>
-o.status==="pending" ||
-(o.driverUid===myUid && o.status!=="delivered")
-);
-
-if(list.length===0){
-html+=`<div class="card">Aucune course disponible</div>`;
-}
-
-list.forEach(o=>{
-
-html+=`
-<div class="card">
-<div class="title">${o.restaurant}</div>
-<div class="meta">Client</div>
-<div class="status">${o.status}</div>
-${renderButton(o)}
-</div>
-`;
-
-});
-
-app.innerHTML=html;
-}
-
-/// 🔥 BOUTONS
-function renderButton(o){
-
-if(o.status==="pending"){
-return `<button class="btn" onclick="accept('${o.id}')">Accepter</button>`;
-}
-
-if(o.status==="accepted" && o.driverUid===myUid){
-return `<button class="btn" onclick="pickup('${o.id}')">Récupéré</button>`;
-}
-
-if(o.status==="picked" && o.driverUid===myUid){
-return `<button class="btn" onclick="deliver('${o.id}')">Livré</button>`;
-}
-
-return "";
-}
-
-/// 🔥 ACTIONS
-function accept(id){
-updateOrder(id,{
-status:"accepted",
-driverUid:myUid
+// 🔥 UPDATE FIRESTORE
+if(currentOrderId){
+updateDoc(doc(db,"orders",currentOrderId),{
+driverLat: myLat,
+driverLng: myLng
 });
 }
 
-function pickup(id){
-updateOrder(id,{
+});
+}
+
+// LISTEN ORDERS
+onSnapshot(collection(db,"orders"),snap=>{
+snap.forEach(d=>{
+let data = d.data();
+
+// prendre première commande pending
+if(data.status==="pending" && !currentOrderId){
+currentOrderId = d.id;
+console.log("Order assigned:", currentOrderId);
+}
+});
+});
+
+// ACTIONS
+window.accept = async function(){
+if(!currentOrderId)return;
+
+await updateDoc(doc(db,"orders",currentOrderId),{
+status:"accepted"
+});
+}
+
+window.pickup = async function(){
+if(!currentOrderId)return;
+
+await updateDoc(doc(db,"orders",currentOrderId),{
 status:"picked"
 });
 }
 
-function deliver(id){
-updateOrder(id,{
+window.deliver = async function(){
+if(!currentOrderId)return;
+
+await updateDoc(doc(db,"orders",currentOrderId),{
 status:"delivered"
 });
-}
-
-/// HISTORIQUE
-function history(){
-
-db.collection("orders")
-.where("driverUid","==",myUid)
-.where("status","==","delivered")
-.get()
-.then(snapshot=>{
-
-let html=`<div class="header">Historique</div>`;
-
-if(snapshot.empty){
-html+=`<div class="card">Aucune livraison</div>`;
-}
-
-snapshot.forEach(doc=>{
-let o = doc.data();
-html+=`
-<div class="card">
-<div class="title">${o.restaurant}</div>
-<div class="status">Livré</div>
-</div>
-`;
-});
-
-app.innerHTML=html;
-
-});
-
-}
-
-/// PROFIL
-function profile(){
-app.innerHTML=`
-<div class="header">Profil chauffeur</div>
-<div class="card">Statut actif</div>
-`;
 }
 
 </script>
