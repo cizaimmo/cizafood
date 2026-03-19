@@ -436,6 +436,12 @@ renderTracking(o);
 });
 }
 
+// STEP HELPER (OBLIGATOIRE)
+function isActive(current, step){
+const order=["pending","accepted","preparing","ready","picked","delivered"];
+return order.indexOf(step) <= order.indexOf(current);
+}
+  
 function renderTracking(o){
 
 let steps={
