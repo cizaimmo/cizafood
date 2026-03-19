@@ -98,20 +98,54 @@ notif.style.display="block";
 setTimeout(()=>notif.style.display="none",3000);
 }
 
-// HOME
 window.renderHome=function(){
+
 app.innerHTML=`
-<div class="header">CizaFood+</div>
+
+<div class="header">
+CizaFood+
+<div style="font-size:13px;color:#aaa;margin-top:5px;">
+📍 Bujumbura
+</div>
+</div>
+
+<!-- CATEGORIES -->
+<div style="display:flex;gap:10px;padding:0 15px 10px;overflow-x:auto;">
+<div class="menu">🍔 Fast Food</div>
+<div class="menu">🍕 Pizza</div>
+<div class="menu">🍗 Poulet</div>
+<div class="menu">🍛 Local</div>
+</div>
+
+<!-- RESTAURANTS -->
 
 <div class="restaurant" onclick="openRestaurant()">
 <img src="https://images.unsplash.com/photo-1600891964599-f61ba0e24092">
 <div class="restaurant-info">
-<div>Chez André</div>
+<div style="font-weight:700;">Chez André</div>
+<div class="meta">⭐ 4.7 • 20 min • 1.2 km</div>
 </div>
 </div>
+
+<div class="restaurant">
+<img src="https://images.unsplash.com/photo-1540189549336-e6e99c3679fe">
+<div class="restaurant-info">
+<div style="font-weight:700;">Pizza City</div>
+<div class="meta">⭐ 4.5 • 25 min • 2 km</div>
+</div>
+</div>
+
+<div class="restaurant">
+<img src="https://images.unsplash.com/photo-1550547660-d9450f859349">
+<div class="restaurant-info">
+<div style="font-weight:700;">Burger House</div>
+<div class="meta">⭐ 4.6 • 15 min • 800 m</div>
+</div>
+</div>
+
 `;
 }
-
+  
 // RESTO
 window.openRestaurant=function(){
 app.innerHTML=`
@@ -249,31 +283,69 @@ L.marker([o.clientLat,o.clientLng]).addTo(map);
 // PROFIL PREMIUM
 window.profile=function(){
 
-let user=auth.currentUser;
+let user = auth.currentUser;
 
+// 🔴 PAS CONNECTÉ
 if(!user){
-app.innerHTML=`<div class="header">Profil</div>`;
+app.innerHTML=`
+<div class="header">Profil</div>
+
+<div style="padding:20px;text-align:center;">
+
+<div style="font-size:60px;margin-bottom:10px;">👤</div>
+
+<div style="font-weight:700;margin-bottom:10px;">
+Non connecté
+</div>
+
+<div style="color:#aaa;font-size:14px;margin-bottom:20px;">
+Connecte-toi pour accéder à ton profil
+</div>
+
+<button class="btn" onclick="notifShow('Connexion bientôt disponible')">
+Se connecter
+</button>
+
+</div>
+`;
 return;
 }
 
-let name=user.email?user.email.split("@")[0]:"Client";
+// 🟢 CONNECTÉ
+let name = user.email ? user.email.split("@")[0] : "Client";
 
 app.innerHTML=`
 <div class="profile">
+
 <div class="avatar"></div>
+
 <h2>${name}</h2>
-<div class="info">${user.email}</div>
+<p style="color:#aaa;font-size:13px;">Compte actif</p>
+
+<div class="info">📧 ${user.email}</div>
+<div class="info">🆔 ${user.uid}</div>
+
 <div id="map"></div>
 
-<button class="btn" onclick="deleteAccount()">Supprimer compte</button>
+<button class="btn" style="margin-top:20px;background:#8B0000;color:#fff;" onclick="deleteAccount()">
+Supprimer mon compte
+</button>
+
 </div>
 `;
 
-let map=L.map('map').setView([userLocation?.lat||-3.38,userLocation?.lng||29.36],13);
+// MAP
+let lat = userLocation?.lat || -3.38;
+let lng = userLocation?.lng || 29.36;
+
+let map=L.map('map').setView([lat,lng],13);
+
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-L.marker([userLocation?.lat||-3.38,userLocation?.lng||29.36]).addTo(map);
+
+L.marker([lat,lng]).addTo(map);
 }
 
+  
 window.deleteAccount=function(){
 if(!confirm("Supprimer compte ?"))return;
 deleteUser(auth.currentUser).then(()=>notifShow("Compte supprimé"));
