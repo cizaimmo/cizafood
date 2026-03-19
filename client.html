@@ -11,126 +11,31 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
+<!-- 🔥 FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-
-body{
-font-family:'Inter',sans-serif;
-background:#0B0B0C;
-color:#fff;
-}
-
-.app{
-max-width:420px;
-margin:auto;
-min-height:100vh;
-padding:20px;
-padding-bottom:100px;
-}
-
-.header{
-font-size:24px;
-font-weight:800;
-margin-bottom:15px;
-}
-
-.search{
-width:100%;
-padding:16px;
-border-radius:16px;
-border:none;
-background:#151517;
-color:#fff;
-margin-bottom:20px;
-outline:none;
-}
-
-.restaurant{
-background:#151517;
-border:1px solid #1f1f23;
-padding:18px;
-border-radius:18px;
-margin-bottom:14px;
-cursor:pointer;
-transition:0.2s;
-}
-
+body{font-family:'Inter',sans-serif;background:#0B0B0C;color:#fff;}
+.app{max-width:420px;margin:auto;min-height:100vh;padding:20px;padding-bottom:100px;}
+.header{font-size:24px;font-weight:800;margin-bottom:15px;}
+.search{width:100%;padding:16px;border-radius:16px;border:none;background:#151517;color:#fff;margin-bottom:20px;outline:none;}
+.restaurant{background:#151517;border:1px solid #1f1f23;padding:18px;border-radius:18px;margin-bottom:14px;cursor:pointer;transition:0.2s;}
 .restaurant:active{transform:scale(0.97);}
-
 .name{font-size:17px;font-weight:700;margin-bottom:5px;}
 .meta{font-size:13px;color:#aaa;}
-
-.menu{
-background:#151517;
-padding:16px;
-border-radius:16px;
-margin-bottom:12px;
-}
-
-.price{
-color:#D4AF37;
-font-weight:700;
-margin:8px 0;
-}
-
-.btn{
-width:100%;
-padding:14px;
-border:none;
-border-radius:14px;
-background:#D4AF37;
-color:#000;
-font-weight:700;
-cursor:pointer;
-}
-
-.back{
-margin-top:20px;
-color:#D4AF37;
-cursor:pointer;
-font-weight:600;
-}
-
-.cartbar{
-position:fixed;
-bottom:80px;
-left:10px;
-right:10px;
-background:#D4AF37;
-color:#000;
-padding:14px;
-border-radius:16px;
-display:flex;
-justify-content:space-between;
-font-weight:700;
-}
-
-.tabbar{
-position:fixed;
-bottom:0;
-left:0;
-right:0;
-background:#0B0B0C;
-border-top:1px solid #1c1c1c;
-display:flex;
-justify-content:space-around;
-padding:12px;
-}
-
+.menu{background:#151517;padding:16px;border-radius:16px;margin-bottom:12px;}
+.price{color:#D4AF37;font-weight:700;margin:8px 0;}
+.btn{width:100%;padding:14px;border:none;border-radius:14px;background:#D4AF37;color:#000;font-weight:700;cursor:pointer;}
+.back{margin-top:20px;color:#D4AF37;cursor:pointer;font-weight:600;}
+.cartbar{position:fixed;bottom:80px;left:10px;right:10px;background:#D4AF37;color:#000;padding:14px;border-radius:16px;display:flex;justify-content:space-between;font-weight:700;}
+.tabbar{position:fixed;bottom:0;left:0;right:0;background:#0B0B0C;border-top:1px solid #1c1c1c;display:flex;justify-content:space-around;padding:12px;}
 .tab{color:#777;font-size:14px;}
 .active{color:#D4AF37;}
-
-.step{
-background:#151517;
-padding:14px;
-border-radius:12px;
-margin-bottom:8px;
-}
-
-.activeStep{
-border:1px solid #D4AF37;
-background:#1f1a0a;
-}
+.step{background:#151517;padding:14px;border-radius:12px;margin-bottom:8px;}
+.activeStep{border:1px solid #D4AF37;background:#1f1a0a;}
 </style>
 </head>
 
@@ -146,11 +51,53 @@ background:#1f1a0a;
 <div class="tab" onclick="profile()">👤</div>
 </div>
 
-<script src="orders.js"></script>
-
 <script>
 
+/// 🔥 FIREBASE INIT
+const firebaseConfig = {
+  apiKey: "AIzaSyA-Dh3VguPXVk27DwOkMjRbYIXEhrEPcsM",
+  authDomain: "cizafood.firebaseapp.com",
+  projectId: "cizafood",
+  storageBucket: "cizafood.firebasestorage.app",
+  messagingSenderId: "695527669049",
+  appId: "1:695527669049:web:256ddb7aaf2af2df293ce8"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+auth.signInAnonymously();
+
+/// 🔥 FIRESTORE FUNCTIONS
+
+function createOrder(data){
+  return db.collection("orders").add({
+    ...data,
+    status:"pending",
+    createdAt: Date.now()
+  });
+}
+
+function updateOrder(id,data){
+  return db.collection("orders").doc(id).update(data);
+}
+
+function listenOrders(callback){
+  db.collection("orders").onSnapshot(snapshot=>{
+    let orders=[];
+    snapshot.forEach(doc=>{
+      orders.push({id:doc.id,...doc.data()});
+    });
+    callback(orders);
+  });
+}
+
+/// APP LOGIC
+
 let cart=[];
+let currentOrder=null;
 
 const restaurants=[
 {
@@ -171,7 +118,6 @@ menu:[
 }
 ];
 
-// HOME
 function renderHome(){
 let html=`<div class="header">Commander</div>
 <input class="search" placeholder="🔍 Rechercher">`;
@@ -184,10 +130,9 @@ html+=`
 </div>`;
 });
 
-document.getElementById("app").innerHTML=html;
+app.innerHTML=html;
 }
 
-// RESTAURANT
 function openRestaurant(i){
 let r=restaurants[i];
 
@@ -204,16 +149,14 @@ ${m.name}
 
 html+=`<div class="back" onclick="renderHome()">← Retour</div>`;
 
-document.getElementById("app").innerHTML=html;
+app.innerHTML=html;
 }
 
-// ADD
 function add(name,price){
 cart.push({name,price});
 updateCart();
 }
 
-// CART BAR
 function updateCart(){
 if(cart.length===0){
 cartbar.style.display="none";
@@ -221,19 +164,14 @@ return;
 }
 
 let total=cart.reduce((a,b)=>a+b.price,0);
-
 cartbar.style.display="flex";
-cartbar.innerHTML=`${cart.length} article(s) • ${total} BIF`;
+cartbar.innerHTML=`${cart.length} • ${total} BIF`;
 }
 
-// CART
 function openCart(){
 
 if(cart.length===0){
-app.innerHTML=`
-<div class="header">Panier vide</div>
-<div class="back" onclick="renderHome()">← Retour</div>
-`;
+app.innerHTML=`<div class="header">Panier vide</div>`;
 return;
 }
 
@@ -244,7 +182,7 @@ cart.forEach((i,index)=>{
 total+=i.price;
 html+=`
 <div class="menu">
-${i.name} - ${i.price} BIF
+${i.name} - ${i.price}
 <button onclick="remove(${index})">Supprimer</button>
 </div>`;
 });
@@ -257,39 +195,41 @@ html+=`
 app.innerHTML=html;
 }
 
-// REMOVE
 function remove(i){
 cart.splice(i,1);
 openCart();
 updateCart();
 }
 
-// CHECKOUT → TRACK
 function checkout(total){
 
 createOrder({
 restaurant:"Chez André",
-client:"Client",
+clientUid: auth.currentUser.uid,
 items:cart,
-total:total
+total
 });
 
 cart=[];
 updateCart();
-
-trackOrder();
 }
 
-// TRACKING + MAP
-function trackOrder(){
+/// 🔥 LISTEN LIVE CLIENT
 
-let orders=getOrders();
-let last=orders[orders.length-1];
+listenOrders((orders)=>{
 
-if(!last){
-app.innerHTML=`<div class="header">Aucune commande</div>`;
-return;
+let my = orders.find(o=>o.clientUid===auth.currentUser.uid);
+
+if(my){
+currentOrder = my;
+trackOrder(my);
 }
+
+});
+
+/// TRACKING + MAP
+
+function trackOrder(order){
 
 let html=`<div class="header">Suivi commande</div>
 <div id="map" style="height:220px;border-radius:16px;margin-bottom:10px;"></div>`;
@@ -297,16 +237,15 @@ let html=`<div class="header">Suivi commande</div>
 let steps=["pending","accepted","preparing","ready","picked","delivered"];
 
 steps.forEach(s=>{
-let active=isStepActive(last.status,s);
+let active=isStepActive(order.status,s);
 html+=`<div class="step ${active?"activeStep":""}">${s}</div>`;
 });
 
 app.innerHTML=html;
 
-initMap(last);
+initMap(order);
 }
 
-// MAP
 let map, marker;
 
 function initMap(order){
@@ -315,36 +254,24 @@ map = L.map('map').setView([-3.3822, 29.3644], 13);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-// client
-L.marker([-3.3822,29.3644]).addTo(map).bindPopup("Client");
+L.marker([-3.3822,29.3644]).addTo(map);
 
-// chauffeur
 if(order.driverLat){
-marker=L.marker([order.driverLat,order.driverLng]).addTo(map).bindPopup("Chauffeur");
+marker=L.marker([order.driverLat,order.driverLng]).addTo(map);
 }else{
-marker=L.marker([-3.39,29.36]).addTo(map).bindPopup("Chauffeur");
+marker=L.marker([-3.39,29.36]).addTo(map);
 }
 }
 
-// STEP
 function isStepActive(current,step){
 const order=["pending","accepted","preparing","ready","picked","delivered"];
 return order.indexOf(step)<=order.indexOf(current);
 }
 
-// AUTO REFRESH
-setInterval(()=>{
-if(document.getElementById("map")){
-trackOrder();
-}
-},3000);
-
-// PROFILE
 function profile(){
 app.innerHTML=`<div class="header">Profil</div>`;
 }
 
-// INIT
 renderHome();
 
 </script>
