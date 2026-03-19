@@ -449,7 +449,7 @@ delivered:"Livré"
 
 app.innerHTML=`
 
-<!-- HEADER AVEC RETOUR -->
+<!-- HEADER -->
 <div style="display:flex;align-items:center;padding:20px;gap:10px;">
 
 <button onclick="renderHome()" 
@@ -469,7 +469,7 @@ font-size:18px;
 
 </div>
 
-<!-- STATUS CARD -->
+<!-- STATUS -->
 <div style="margin:15px;background:#151517;padding:18px;border-radius:18px;">
 <div style="font-size:16px;font-weight:700;">
 ${steps[o.status] || "En cours"}
@@ -496,10 +496,16 @@ ${steps[s]}
 
 `;
 
-// MAP
-let map=L.map('map').setView([o.clientLat,o.clientLng],13);
+// 🔥 CLEAN MAP (ULTRA IMPORTANT)
+if(window.myMap){
+window.myMap.remove();
+}
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+// 🔥 INIT MAP
+window.myMap = L.map('map').setView([o.clientLat,o.clientLng],13);
+
+// TILE
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(window.myMap);
 
 // POSITIONS
 let client=[o.clientLat,o.clientLng];
@@ -508,7 +514,7 @@ o.driverLat || o.clientLat+0.01,
 o.driverLng || o.clientLng+0.01
 ];
 
-// ICONS (ULTRA PRO)
+// ICONS
 let clientIcon=L.icon({
 iconUrl:"https://cdn-icons-png.flaticon.com/512/64/64113.png",
 iconSize:[30,30]
@@ -520,13 +526,16 @@ iconSize:[35,35]
 });
 
 // MARKERS
-L.marker(client,{icon:clientIcon}).addTo(map);
-L.marker(driver,{icon:driverIcon}).addTo(map);
+L.marker(client,{icon:clientIcon}).addTo(window.myMap);
+L.marker(driver,{icon:driverIcon}).addTo(window.myMap);
 
-// LIGNE
-L.polyline([driver,client],{color:"#D4AF37",weight:4}).addTo(map);
+// LINE
+L.polyline([driver,client],{
+color:"#D4AF37",
+weight:4
+}).addTo(window.myMap);
+
 }
-
 // PROFIL PREMIUM
 window.profile=function(){
 
