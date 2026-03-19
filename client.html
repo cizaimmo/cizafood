@@ -384,17 +384,13 @@ let quartier = document.getElementById("quartier");
 let repere = document.getElementById("repere");
 let phone = document.getElementById("phone");
 
-// sécurité
-if(!province || !commune || !quartier || !phone){
-notifShow("Erreur formulaire");
-return;
-}
-
+// validation
 if(!province.value || !commune.value || !quartier.value || !phone.value){
 notifShow("Complète toutes les informations");
 return;
 }
 
+// DATA PROPRE
 const data={
 restaurant:"Chez André",
 
@@ -417,13 +413,18 @@ phone:phone.value,
 createdAt:Date.now()
 };
 
-const ref=await addDoc(collection(db,"orders"),data);
+// 🔥 1. AFFICHAGE IMMÉDIAT TRACKING
+renderTracking(data);
 
-currentOrderId=ref.id;
+// 🔥 2. ENVOI FIREBASE
+const ref = await addDoc(collection(db,"orders"),data);
+
+currentOrderId = ref.id;
 cart=[];
 
 notifShow("Commande envoyée");
 
+// 🔥 3. LISTEN LIVE
 track();
 }
 // TRACK
