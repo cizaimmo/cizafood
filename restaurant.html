@@ -7,6 +7,11 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
+<!-- 🔥 FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 
@@ -95,20 +100,49 @@ padding:12px;
 <div class="tab" onclick="profile()">👤 Profil</div>
 </div>
 
-<!-- ORDERS -->
-<script src="orders.js"></script>
-
 <script>
 
-// ⚠️ SIMULATION IDENTITÉ RESTAURANT
+/// 🔥 FIREBASE INIT
+const firebaseConfig = {
+  apiKey: "AIzaSyA-Dh3VguPXVk27DwOkMjRbYIXEhrEPcsM",
+  authDomain: "cizafood.firebaseapp.com",
+  projectId: "cizafood",
+  storageBucket: "cizafood.firebasestorage.app",
+  messagingSenderId: "695527669049",
+  appId: "1:695527669049:web:256ddb7aaf2af2df293ce8"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+auth.signInAnonymously();
+
+/// 🔥 IDENTITÉ RESTAURANT
 const restaurantName = "Chez André";
 
-// LISTE COMMANDES
+/// 🔥 LISTEN TEMPS RÉEL
+function listenOrders(callback){
+  db.collection("orders").onSnapshot(snapshot=>{
+    let orders=[];
+    snapshot.forEach(doc=>{
+      orders.push({id:doc.id,...doc.data()});
+    });
+    callback(orders);
+  });
+}
+
+/// 🔥 UPDATE
+function updateOrder(id,data){
+  return db.collection("orders").doc(id).update(data);
+}
+
+/// 🔥 UI COMMANDES
 function loadOrders(){
 
-let all = getOrders();
+listenOrders((all)=>{
 
-// filtrer commandes de CE restaurant
 let orders = all.filter(o => o.restaurant === restaurantName);
 
 let html=`<div class="header">Commandes</div>`;
@@ -121,8 +155,8 @@ orders.forEach(o=>{
 
 html+=`
 <div class="card">
-<div class="title">${o.client}</div>
-<div class="meta">${o.items.map(i=>i.name).join(", ")}</div>
+<div class="title">${o.clientUid || "Client"}</div>
+<div class="meta">${(o.items || []).map(i=>i.name).join(", ")}</div>
 <div class="status">${getStatusLabel(o.status)}</div>
 
 ${getActions(o)}
@@ -132,10 +166,13 @@ ${getActions(o)}
 
 });
 
-document.getElementById("app").innerHTML=html;
+app.innerHTML=html;
+
+});
+
 }
 
-// LABEL STATUS
+/// LABEL STATUS
 function getStatusLabel(status){
 
 if(status==="pending") return "En attente";
@@ -148,57 +185,54 @@ if(status==="delivered") return "Livré";
 return status;
 }
 
-// ACTIONS
+/// ACTIONS
 function getActions(o){
 
 if(o.status==="pending"){
-return `<button class="btn" onclick="accept(${o.id})">Accepter</button>`;
+return `<button class="btn" onclick="accept('${o.id}')">Accepter</button>`;
 }
 
 if(o.status==="accepted"){
-return `<button class="btn" onclick="prepare(${o.id})">Préparer</button>`;
+return `<button class="btn" onclick="prepare('${o.id}')">Préparer</button>`;
 }
 
 if(o.status==="preparing"){
-return `<button class="btn" onclick="ready(${o.id})">Marquer prêt</button>`;
+return `<button class="btn" onclick="ready('${o.id}')">Marquer prêt</button>`;
 }
 
 return "";
 }
 
-// ACTIONS UPDATE
+/// ACTIONS UPDATE
 function accept(id){
 updateOrder(id,{status:"accepted"});
-loadOrders();
 }
 
 function prepare(id){
 updateOrder(id,{status:"preparing"});
-loadOrders();
 }
 
 function ready(id){
 updateOrder(id,{status:"ready"});
-loadOrders();
 }
 
-// MENU
+/// MENU
 function menu(){
-document.getElementById("app").innerHTML=`
+app.innerHTML=`
 <div class="header">Menu</div>
 <div class="card">Gestion du menu (à connecter plus tard)</div>
 `;
 }
 
-// PROFIL
+/// PROFIL
 function profile(){
-document.getElementById("app").innerHTML=`
+app.innerHTML=`
 <div class="header">Profil restaurant</div>
 <div class="card">Informations du restaurant</div>
 `;
 }
 
-// INIT
+/// INIT
 loadOrders();
 
 </script>
