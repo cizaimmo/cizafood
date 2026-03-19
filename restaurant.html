@@ -18,96 +18,116 @@ background:#0B0B0C;
 color:#fff;
 }
 
+/* HEADER */
 .header{
-padding:15px;
+padding:20px;
 border-bottom:1px solid #222;
 }
 
 .topbar{
 display:flex;
 justify-content:space-between;
-font-size:14px;
 color:#aaa;
+font-size:14px;
 }
 
 .clock{
 color:#D4AF37;
 font-weight:800;
+font-size:16px;
 }
 
+h2{
+margin-top:10px;
+}
+
+/* KPI */
 .kpi{
 display:flex;
-gap:10px;
-padding:10px;
-overflow-x:auto;
-}
-
-.kpi .box{
-background:#151517;
-padding:12px;
-border-radius:10px;
-min-width:120px;
-}
-
-.board{
-display:flex;
-overflow-x:auto;
 gap:15px;
-padding:10px;
+padding:15px;
+}
+
+.box{
+background:#151517;
+padding:15px;
+border-radius:12px;
+min-width:160px;
+font-size:18px;
+font-weight:700;
+}
+
+/* GRID ERP */
+.board{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:15px;
+padding:15px;
 }
 
 .column{
-min-width:300px;
+background:#111;
+padding:10px;
+border-radius:12px;
 }
 
 .column h3{
 margin-bottom:10px;
+text-align:center;
 }
 
+/* CARD */
 .card{
-background:#151517;
-padding:12px;
-border-radius:12px;
-margin-bottom:10px;
+background:#1A1A1D;
+padding:16px;
+border-radius:14px;
+margin-bottom:12px;
 border:1px solid #222;
+font-size:15px;
+}
+
+.card.urgent{
+border:1px solid red;
+box-shadow:0 0 10px red;
 }
 
 .meta{
-font-size:12px;
+font-size:13px;
 color:#aaa;
-margin-top:5px;
-line-height:1.4;
+margin-top:6px;
 }
 
 .timer{
-font-size:12px;
+margin-top:6px;
 font-weight:700;
-margin-top:5px;
 }
 
-.urgent{
-color:red;
+.timer.red{
+color:#ff4444;
+font-size:16px;
 }
 
+/* DRIVER */
 .driver{
 display:flex;
-gap:8px;
-margin-top:8px;
+gap:10px;
+margin-top:10px;
 align-items:center;
 }
 
 .driver img{
-width:40px;
-height:40px;
+width:45px;
+height:45px;
 border-radius:50%;
 }
 
+/* BUTTONS */
 .btn{
 width:100%;
-padding:10px;
-margin-top:5px;
+padding:12px;
+margin-top:8px;
 border:none;
-border-radius:8px;
+border-radius:10px;
 font-weight:700;
 background:#D4AF37;
 }
@@ -117,14 +137,14 @@ background:#ff4444;
 color:#fff;
 }
 
+.btn.green{
+background:#00c853;
+color:#fff;
+}
+
 .btn.whatsapp{
 background:#25D366;
 color:#000;
-}
-
-.archive{
-padding:10px;
-border-top:1px solid #222;
 }
 </style>
 </head>
@@ -143,11 +163,6 @@ border-top:1px solid #222;
 
 <div class="board" id="board"></div>
 
-<div class="archive">
-<h3>📁 Historique</h3>
-<div id="archive"></div>
-</div>
-
 <script>
 
 // FIREBASE
@@ -160,14 +175,11 @@ projectId:"cizafood"
 const db = firebase.firestore();
 const restaurantName="Chez André";
 
-// 🔥 NEW ORDER TRACKING
-let knownOrders = new Set();
-
-// CLOCK LIVE
+// CLOCK
 setInterval(()=>{
 let d=new Date();
-document.getElementById("clock").innerText=d.toLocaleTimeString();
-document.getElementById("date").innerText=d.toLocaleDateString();
+date.innerText=d.toLocaleDateString();
+clock.innerText=d.toLocaleTimeString();
 },1000);
 
 // SOUND
@@ -175,62 +187,61 @@ function playSound(){
 new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
 }
 
-// 🔥 DETECT NEW ORDERS (FIXED)
-function detectNewOrders(orders){
-orders.forEach(o=>{
-if(!knownOrders.has(o.id)){
-playSound();
-}
-knownOrders.add(o.id);
-});
-}
+let known = new Set();
 
-// TIMER FIXED
-function timer(o){
-
-let base = o.createdAt || o.restaurantAcceptedAt;
+// TIMER
+function getTimer(o){
+let base=o.createdAt || o.restaurantAcceptedAt;
 if(!base) return "";
 
-let min = Math.floor((Date.now()-base)/60000);
+let min=Math.floor((Date.now()-base)/60000);
+let urgent=min>15;
 
-return `<div class="timer ${min>15?"urgent":""}">⏱ ${min} min</div>`;
+return {
+text:`⏱ ${min} min`,
+urgent
+};
 }
 
 // DRIVER
 function driver(o){
-if(!o.assignedDriverId)return "";
+if(!o.assignedDriverId) return "";
+
 return `
 <div class="driver">
-<img src="${o.driverPhoto||'https://cdn-icons-png.flaticon.com/512/149/149071.png'}">
+<img src="${o.driverPhoto || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}">
 <div>
-${o.driverName||""}<br>
-${o.vehicleType||""} ${o.vehicleColor||""}<br>
-${o.plateNumber||""}
+<b>${o.driverName || ""}</b><br>
+${o.vehicleType || ""} ${o.vehicleColor || ""}<br>
+${o.plateNumber || ""}
 </div>
 </div>`;
 }
 
 // CARD
 function card(o){
+
+let t=getTimer(o);
+
 return `
-<div class="card">
+<div class="card ${t.urgent?"urgent":""}">
 
-<b>${o.clientName||"Client"}</b>
+<b>${o.clientName || "Client"}</b>
 
-${timer(o)}
+<div class="timer ${t.urgent?"red":""}">
+${t.text}
+</div>
 
 <div class="meta">
-📍 ${o.deliveryAddress?.province||""}, ${o.deliveryAddress?.commune||""}<br>
-📌 ${o.deliveryAddress?.quartier||""}<br>
-🧭 ${o.deliveryAddress?.repere||""}<br>
-📞 ${o.clientPhone||""}
+📍 ${o.deliveryAddress?.quartier || ""}<br>
+📞 ${o.clientPhone || ""}
 </div>
 
 <div class="meta">
 🍽 ${(o.items||[]).map(i=>i.name).join(", ")}
 </div>
 
-<div class="meta">💰 ${o.total||0} BIF</div>
+<div class="meta">💰 ${o.total || 0} BIF</div>
 
 ${driver(o)}
 
@@ -256,33 +267,29 @@ return `<button class="btn" onclick="update('${o.id}','preparing')">Préparer</b
 }
 
 if(o.status==="preparing"){
-return `<button class="btn" onclick="update('${o.id}','ready')">Prêt</button>`;
+return `<button class="btn green" onclick="update('${o.id}','ready')">Commande prête</button>`;
 }
 
 return "";
 }
 
-// 🔐 UPDATE SECURE + FLOW CONTROL
+// UPDATE sécurisé
 async function update(id,status){
-
 await db.runTransaction(async tx=>{
 let ref=db.collection("orders").doc(id);
 let snap=await tx.get(ref);
 
 if(!snap.exists) return;
-
 let d=snap.data();
 
-// sécurité restaurant
 if(d.restaurant!==restaurantName) return;
 
-// 🔥 FLOW LOCK
 if(status==="preparing" && d.status!=="accepted") return;
 if(status==="ready" && d.status!=="preparing") return;
 
 tx.update(ref,{
 status:status,
-restaurantAcceptedAt: d.restaurantAcceptedAt || Date.now()
+restaurantAcceptedAt:d.restaurantAcceptedAt || Date.now()
 });
 });
 }
@@ -294,15 +301,19 @@ let orders=[];
 
 snap.forEach(doc=>{
 let o=doc.data();
-if(o.restaurant!==restaurantName)return;
+if(o.restaurant!==restaurantName) return;
+
 orders.push({id:doc.id,...o});
+
+// SOUND
+if(!known.has(doc.id)){
+playSound();
+known.add(doc.id);
+}
 });
 
-// 🔥 FIXED SOUND
-detectNewOrders(orders);
-
 // KPI
-document.getElementById("kpi").innerHTML=`
+kpi.innerHTML=`
 <div class="box">📦 ${orders.length}</div>
 <div class="box">💰 ${orders.reduce((s,o)=>s+(o.total||0),0)}</div>
 <div class="box">🆕 ${orders.filter(o=>o.status==="pending_restaurant").length}</div>
@@ -310,32 +321,27 @@ document.getElementById("kpi").innerHTML=`
 `;
 
 // BOARD
-document.getElementById("board").innerHTML=`
+board.innerHTML=`
 <div class="column">
-<h3>🆕</h3>
+<h3>🆕 Nouvelles</h3>
 ${orders.filter(o=>o.status==="pending_restaurant").map(card).join("")}
 </div>
 
 <div class="column">
-<h3>👨‍🍳</h3>
+<h3>👨‍🍳 Préparation</h3>
 ${orders.filter(o=>o.status==="preparing").map(card).join("")}
 </div>
 
 <div class="column">
-<h3>📦</h3>
+<h3>📦 Prêtes</h3>
 ${orders.filter(o=>o.status==="ready").map(card).join("")}
 </div>
 
 <div class="column">
-<h3>🚗</h3>
+<h3>🚗 Livraison</h3>
 ${orders.filter(o=>o.status==="picked").map(card).join("")}
 </div>
 `;
-
-// ARCHIVE
-document.getElementById("archive").innerHTML=
-orders.filter(o=>o.status==="delivered"||o.status==="rejected")
-.map(o=>`<div class="card">${o.clientName} - ${o.total} BIF</div>`).join("");
 
 });
 
