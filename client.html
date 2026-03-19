@@ -378,34 +378,54 @@ window.removeItem=i=>{cart.splice(i,1);openCart();}
 // CHECKOUT
 window.checkout=async function(total){
 
-if(!province.value || !commune.value || !quartier.value || !phone.value){
-notifShow("Complète les infos");
+let province = document.getElementById("province");
+let commune = document.getElementById("commune");
+let quartier = document.getElementById("quartier");
+let repere = document.getElementById("repere");
+let phone = document.getElementById("phone");
+
+// sécurité
+if(!province || !commune || !quartier || !phone){
+notifShow("Erreur formulaire");
 return;
 }
 
-const ref=await addDoc(collection(db,"orders"),{
+if(!province.value || !commune.value || !quartier.value || !phone.value){
+notifShow("Complète toutes les informations");
+return;
+}
+
+const data={
 restaurant:"Chez André",
+
 clientName:"Client Ciza",
 clientId:"client_demo",
+
 items:cart,
 total,
 status:"pending",
-clientLat:userLocation?.lat||-3.38,
-clientLng:userLocation?.lng||29.36,
+
+clientLat:userLocation?.lat || -3.38,
+clientLng:userLocation?.lng || 29.36,
+
 province:province.value,
 commune:commune.value,
 quartier:quartier.value,
-repere:repere.value,
+repere:repere?.value || "",
 phone:phone.value,
+
 createdAt:Date.now()
-});
+};
+
+const ref=await addDoc(collection(db,"orders"),data);
 
 currentOrderId=ref.id;
 cart=[];
+
 notifShow("Commande envoyée");
+
 track();
 }
-
 // TRACK
 function track(){
 onSnapshot(doc(db,"orders",currentOrderId),(d)=>{
