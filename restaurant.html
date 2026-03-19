@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CizaFood+ ERP Restaurant</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<style>
+body{
+margin:0;
+font-family:Inter;
+background:#0B0B0C;
+color:#fff;
+}
+
+.header{
+padding:20px;
+border-bottom:1px solid #222;
+}
+
+.topbar{
+display:flex;
+justify-content:space-between;
+color:#aaa;
+font-size:14px;
+}
+
+.clock{
+color:#D4AF37;
+font-weight:800;
+font-size:16px;
+}
+
+h2{
+margin-top:10px;
+}
+
+.kpi{
+display:flex;
+gap:15px;
+padding:15px;
+}
+
+.box{
+background:#151517;
+padding:15px;
+border-radius:12px;
+min-width:160px;
+font-size:18px;
+font-weight:700;
+}
+
+.board{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:15px;
+padding:15px;
+}
+
+.column{
+background:#111;
+padding:10px;
+border-radius:12px;
+}
+
+.column h3{
+margin-bottom:10px;
+text-align:center;
+}
+
+.card{
+background:#1A1A1D;
+padding:16px;
+border-radius:14px;
+margin-bottom:12px;
+border:1px solid #222;
+font-size:15px;
+}
+
+.card.urgent{
+border:1px solid red;
+box-shadow:0 0 10px red;
+}
+
+.meta{
+font-size:13px;
+color:#aaa;
+margin-top:6px;
+}
+
+.timer{
+margin-top:6px;
+font-weight:700;
+}
+
+.timer.red{
+color:#ff4444;
+font-size:16px;
+}
+
+.driver{
+display:flex;
+gap:10px;
+margin-top:10px;
+align-items:center;
+}
+
+.driver img{
+width:45px;
+height:45px;
+border-radius:50%;
+}
+
+.btn{
+width:100%;
+padding:12px;
+margin-top:8px;
+border:none;
+border-radius:10px;
+font-weight:700;
+background:#D4AF37;
+}
+
+.btn.red{
+background:#ff4444;
+color:#fff;
+}
+
+.btn.green{
+background:#00c853;
+color:#fff;
+}
+
+.btn.whatsapp{
+background:#25D366;
+color:#000;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<div class="topbar">
+<div id="date"></div>
+<div class="clock" id="clock"></div>
+</div>
+<h2>Dashboard Restaurant</h2>
+</div>
+
+<div class="kpi" id="kpi"></div>
+
+<div class="board" id="board"></div>
+
+<script>
+
+firebase.initializeApp({
+apiKey:"AIzaSyA-Dh3VguPXVk27DwOkMjRbYIXEhrEPcsM",
+authDomain:"cizafood.firebaseapp.com",
+projectId:"cizafood"
+});
+
+const db = firebase.firestore();
+const restaurantName="Chez André";
+
+setInterval(()=>{
+let d=new Date();
+date.innerText=d.toLocaleDateString();
+clock.innerText=d.toLocaleTimeString();
+},1000);
+
+function playSound(){
+new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
+}
+
+let known = new Set();
+
+function getTimer(o){
+let base=o.createdAt || o.restaurantAcceptedAt;
+if(!base) return "";
+
+let min=Math.floor((Date.now()-base)/60000);
+let urgent=min>15;
+
+return {
+text:`⏱ ${min} min`,
+urgent
+};
+}
+
+function driver(o){
+if(!o.assignedDriverId) return "";
+
+return `
+<div class="driver">
+<img src="${o.driverPhoto || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}">
+<div>
+<b>${o.driverName || ""}</b><br>
+${o.vehicleType || ""} ${o.vehicleColor || ""}<br>
+${o.plateNumber || ""}
+</div>
+</div>`;
+}
+
+function card(o){
+
+let t=getTimer(o);
+
+return `
+<div class="card ${t.urgent?"urgent":""}">
+
+<b>${o.clientName || "Client"}</b>
+
+<div class="timer ${t.urgent?"red":""}">
+${t.text}
+</div>
+
+<div class="meta">
+📍 ${o.deliveryAddress?.quartier || ""}<br>
+📞 ${o.clientPhone || ""}
+</div>
+
+<div class="meta">
+🍽 ${(o.items||[]).map(i=>i.name).join(", ")}
+</div>
+
+<div class="meta">💰 ${o.total || 0} BIF</div>
+
+${driver(o)}
+
+<a class="btn whatsapp" href="https://wa.me/${(o.clientPhone||"").replace("+","")}">WhatsApp</a>
+<a class="btn" href="tel:${o.clientPhone}">Appeler</a>
+
+${actions(o)}
+
+</div>`;
+}
+
+function actions(o){
+
+if(o.status==="pending_restaurant"){
+return `
+<button class="btn" onclick="update('${o.id}','accepted')">Accepter</button>
+<button class="btn red" onclick="update('${o.id}','rejected')">Refuser</button>`;
+}
+
+if(o.status==="accepted"){
+return `<button class="btn" onclick="update('${o.id}','preparing')">Préparer</button>`;
+}
+
+if(o.status==="preparing"){
+return `<button class="btn green" onclick="update('${o.id}','ready')">Commande prête</button>`;
+}
+
+return "";
+}
+
+async function update(id,status){
+await db.runTransaction(async tx=>{
+let ref=db.collection("orders").doc(id);
+let snap=await tx.get(ref);
+
+if(!snap.exists) return;
+let d=snap.data();
+
+if(d.restaurantName !== restaurantName) return;
+
+if(status==="preparing" && d.status!=="accepted") return;
+if(status==="ready" && d.status!=="preparing") return;
+
+tx.update(ref,{
+status:status,
+restaurantAcceptedAt:d.restaurantAcceptedAt || Date.now()
+});
+});
+}
+
+db.collection("orders").onSnapshot(snap=>{
+
+let orders=[];
+
+snap.forEach(doc=>{
+let o=doc.data();
+if(o.restaurantName !== restaurantName) return;
+
+orders.push({id:doc.id,...o});
+
+if(!known.has(doc.id)){
+playSound();
+known.add(doc.id);
+}
+});
+
+kpi.innerHTML=`
+<div class="box">📦 ${orders.length}</div>
+<div class="box">💰 ${orders.reduce((s,o)=>s+(o.total||0),0)}</div>
+<div class="box">🆕 ${orders.filter(o=>o.status==="pending_restaurant").length}</div>
+<div class="box">👨‍🍳 ${orders.filter(o=>o.status==="preparing").length}</div>
+`;
+
+board.innerHTML=`
+<div class="column">
+<h3>🆕 Nouvelles</h3>
+${orders.filter(o=>o.status==="pending_restaurant").map(card).join("")}
+</div>
+
+<div class="column">
+<h3>👨‍🍳 Préparation</h3>
+${orders.filter(o=>o.status==="preparing").map(card).join("")}
+</div>
+
+<div class="column">
+<h3>📦 Prêtes</h3>
+${orders.filter(o=>o.status==="ready").map(card).join("")}
+</div>
+
+<div class="column">
+<h3>🚗 Livraison</h3>
+${orders.filter(o=>o.status==="picked").map(card).join("")}
+</div>
+`;
+
+});
+
+</script>
+
+</body>
+</html>
