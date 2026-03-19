@@ -15,13 +15,49 @@ body{font-family:'Inter',sans-serif;background:#0B0B0C;color:#fff;}
 .app{max-width:420px;margin:auto;min-height:100vh;padding-bottom:120px;}
 .header{font-size:26px;font-weight:800;padding:20px;}
 
-.restaurant{margin:15px;border-radius:22px;overflow:hidden;position:relative;}
-.restaurant img{width:100%;height:180px;object-fit:cover;}
-.restaurant-info{position:absolute;bottom:0;left:0;right:0;padding:15px;background:linear-gradient(transparent,rgba(0,0,0,0.9));}
+.restaurant{
+margin:15px;
+border-radius:22px;
+overflow:hidden;
+position:relative;
+box-shadow:0 12px 35px rgba(0,0,0,0.7);
+transition:transform 0.2s ease, box-shadow 0.2s ease;
+}
 
-.menu{margin:15px;background:#151517;padding:18px;border-radius:18px;}
-.price{color:#D4AF37;margin:5px 0;}
+.restaurant:active{
+transform:scale(0.98);
+box-shadow:0 6px 20px rgba(0,0,0,0.8);
+}
 
+.restaurant img{
+width:100%;
+height:190px;
+object-fit:cover;
+filter:brightness(0.95);
+}
+
+.restaurant-info{
+position:absolute;
+bottom:0;
+left:0;
+right:0;
+padding:16px;
+background:linear-gradient(transparent,rgba(0,0,0,0.95));
+}
+
+.restaurant-info .meta{
+font-size:13px;
+color:#ddd;
+margin-top:4px;
+}
+.menu{
+margin:10px;
+background:#151517;
+padding:14px;
+border-radius:16px;
+white-space:nowrap;
+font-size:14px;
+}
 .btn{width:100%;padding:14px;border:none;border-radius:16px;background:#D4AF37;color:#000;font-weight:800;}
 
 input,select{
@@ -109,6 +145,20 @@ CizaFood+
 </div>
 </div>
 
+<!-- SEARCH -->
+<div style="padding:0 15px 10px;">
+<input placeholder="🔍 Rechercher un restaurant..." 
+style="width:100%;padding:14px;border-radius:14px;border:none;background:#1a1a1d;color:#fff;">
+</div>
+
+<!-- FILTRES -->
+<div style="display:flex;gap:10px;padding:0 15px 15px;overflow-x:auto;">
+<div class="menu">⚡ Rapide</div>
+<div class="menu">🔥 Offres</div>
+<div class="menu">🚗 Livraison</div>
+<div class="menu">📍 Proche</div>
+</div>
+
 <!-- CATEGORIES -->
 <div style="display:flex;gap:10px;padding:0 15px 10px;overflow-x:auto;">
 <div class="menu">🍔 Fast Food</div>
@@ -117,35 +167,52 @@ CizaFood+
 <div class="menu">🍛 Local</div>
 </div>
 
-<!-- RESTAURANTS -->
+<!-- SECTION -->
+<div class="header" style="font-size:20px;">🔥 Populaire</div>
 
+<!-- RESTAURANT 1 -->
 <div class="restaurant" onclick="openRestaurant()">
+
+<div style="position:absolute;top:10px;left:10px;background:red;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:700;">
+🔥 Promo
+</div>
+
 <img src="https://images.unsplash.com/photo-1600891964599-f61ba0e24092">
+
 <div class="restaurant-info">
 <div style="font-weight:700;">Chez André</div>
-<div class="meta">⭐ 4.7 • 20 min • 1.2 km</div>
-</div>
+<div class="meta">Cuisine locale • ⭐ 4.7 • 20 min • 1.2 km</div>
 </div>
 
+</div>
+
+<!-- RESTAURANT 2 -->
 <div class="restaurant">
+
 <img src="https://images.unsplash.com/photo-1540189549336-e6e99c3679fe">
+
 <div class="restaurant-info">
 <div style="font-weight:700;">Pizza City</div>
-<div class="meta">⭐ 4.5 • 25 min • 2 km</div>
-</div>
+<div class="meta">Pizza • ⭐ 4.5 • 25 min • 2 km</div>
 </div>
 
+</div>
+
+<!-- RESTAURANT 3 -->
 <div class="restaurant">
+
 <img src="https://images.unsplash.com/photo-1550547660-d9450f859349">
+
 <div class="restaurant-info">
 <div style="font-weight:700;">Burger House</div>
-<div class="meta">⭐ 4.6 • 15 min • 800 m</div>
+<div class="meta">Fast Food • ⭐ 4.6 • 15 min • 800 m</div>
 </div>
+
 </div>
 
 `;
 }
-  
+
 // RESTO
 window.openRestaurant=function(){
 app.innerHTML=`
