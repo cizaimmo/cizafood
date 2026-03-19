@@ -2,194 +2,157 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>CizaFood+ - Restaurant</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CizaFood+ Restaurant PRO</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
-<!-- 🔥 FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter;background:#0B0B0C;color:#fff;margin:0;padding:20px;}
+.card{background:#151517;padding:18px;border-radius:16px;margin-bottom:15px;}
+.btn{padding:12px;border:none;border-radius:10px;background:#D4AF37;margin-top:8px;width:100%;font-weight:700;}
+.btn.red{background:#ff4444;color:#fff;}
+.header{font-size:24px;font-weight:800;margin-bottom:15px;}
+.meta{font-size:13px;color:#aaa;margin-top:6px;}
+.badge{padding:4px 8px;border-radius:8px;font-size:12px;margin-top:6px;display:inline-block;}
 
-body{
-font-family:'Inter',sans-serif;
-background:#0B0B0C;
-color:#fff;
-}
-
-.app{
-max-width:420px;
-margin:auto;
-min-height:100vh;
-padding:20px;
-padding-bottom:100px;
-}
-
-.header{
-font-size:24px;
-font-weight:800;
-margin-bottom:20px;
-}
-
-.card{
-background:#151517;
-border:1px solid #1f1f23;
-padding:18px;
-border-radius:18px;
-margin-bottom:14px;
-}
-
-.title{
-font-size:16px;
-font-weight:700;
-margin-bottom:6px;
-}
-
-.meta{
-font-size:13px;
-color:#aaa;
-margin-bottom:10px;
-}
-
-.status{
-font-size:13px;
-color:#D4AF37;
-margin-bottom:10px;
-}
-
-.btn{
-width:100%;
-padding:14px;
-border:none;
-border-radius:14px;
-background:#D4AF37;
-color:#000;
-font-weight:700;
-cursor:pointer;
-margin-top:8px;
-}
-
-.tabbar{
-position:fixed;
-bottom:0;
-left:0;
-right:0;
-background:#0B0B0C;
-border-top:1px solid #1c1c1c;
-display:flex;
-justify-content:space-around;
+/* DRIVER */
+.driver{
+margin-top:12px;
 padding:12px;
+border-radius:12px;
+background:#0f0f11;
+display:flex;
+gap:10px;
+align-items:center;
 }
 
-.tab{color:#777;font-size:14px;}
-.active{color:#D4AF37;}
+.driver img{
+width:50px;
+height:50px;
+border-radius:50%;
+object-fit:cover;
+}
+
+.driver-info{
+font-size:13px;
+}
 </style>
 </head>
 
 <body>
 
-<div class="app" id="app"></div>
-
-<div class="tabbar">
-<div class="tab active" onclick="loadOrders()">📦 Commandes</div>
-<div class="tab" onclick="menu()">🍽️ Menu</div>
-<div class="tab" onclick="profile()">👤 Profil</div>
-</div>
+<div id="app"></div>
 
 <script>
 
-/// 🔥 FIREBASE INIT
 const firebaseConfig = {
-  apiKey: "AIzaSyA-Dh3VguPXVk27DwOkMjRbYIXEhrEPcsM",
-  authDomain: "cizafood.firebaseapp.com",
-  projectId: "cizafood",
-  storageBucket: "cizafood.firebasestorage.app",
-  messagingSenderId: "695527669049",
-  appId: "1:695527669049:web:256ddb7aaf2af2df293ce8"
+apiKey:"AIzaSyA-Dh3VguPXVk27DwOkMjRbYIXEhrEPcsM",
+authDomain:"cizafood.firebaseapp.com",
+projectId:"cizafood"
 };
 
 firebase.initializeApp(firebaseConfig);
-
 const db = firebase.firestore();
-const auth = firebase.auth();
 
-auth.signInAnonymously();
+const restaurantName="Chez André";
 
-/// 🔥 IDENTITÉ RESTAURANT
-const restaurantName = "Chez André";
+// LISTEN
+db.collection("orders").onSnapshot(snapshot=>{
 
-/// 🔥 LISTEN TEMPS RÉEL
-function listenOrders(callback){
-  db.collection("orders").onSnapshot(snapshot=>{
-    let orders=[];
-    snapshot.forEach(doc=>{
-      orders.push({id:doc.id,...doc.data()});
-    });
-    callback(orders);
-  });
-}
+let orders=[];
 
-/// 🔥 UPDATE
-function updateOrder(id,data){
-  return db.collection("orders").doc(id).update(data);
-}
+snapshot.forEach(doc=>{
+let o=doc.data();
+if(o.restaurant!==restaurantName) return;
 
-/// 🔥 UI COMMANDES
-function loadOrders(){
+orders.push({id:doc.id,...o});
+});
 
-listenOrders((all)=>{
-
-let orders = all.filter(o => o.restaurant === restaurantName);
+// TRI
+orders.sort((a,b)=>{
+const p={pending_restaurant:1,accepted:2,preparing:3,ready:4,picked:5,delivered:6};
+return (p[a.status]||99)-(p[b.status]||99);
+});
 
 let html=`<div class="header">Commandes</div>`;
-
-if(orders.length===0){
-html+=`<div class="card">Aucune commande</div>`;
-}
 
 orders.forEach(o=>{
 
 html+=`
 <div class="card">
-<div class="title">${o.clientUid || "Client"}</div>
-<div class="meta">${(o.items || []).map(i=>i.name).join(", ")}</div>
-<div class="status">${getStatusLabel(o.status)}</div>
 
-${getActions(o)}
+<div><b>${o.clientName || "Client"}</b></div>
+
+<div class="meta">
+📍 ${o.quartier || "-"} <br>
+📞 ${o.phone || "-"} <br>
+💰 ${o.total || 0} BIF
+</div>
+
+<div class="meta">
+🍽 ${(o.items||[]).map(i=>i.name).join(", ")}
+</div>
+
+<div class="badge">${label(o.status)}</div>
+
+${driverBlock(o)}
+
+${actions(o)}
 
 </div>
 `;
 
 });
 
-app.innerHTML=html;
+document.getElementById("app").innerHTML=html;
 
 });
 
+// LABEL
+function label(s){
+return {
+pending_restaurant:"🕒 Nouvelle commande",
+accepted:"👨‍🍳 En préparation (livreur assigné)",
+preparing:"👨‍🍳 Préparation",
+ready:"📦 Prête",
+picked:"🚗 En livraison",
+delivered:"🎉 Livré",
+rejected:"❌ Refusée"
+}[s] || s;
 }
 
-/// LABEL STATUS
-function getStatusLabel(status){
+// 🔥 DRIVER INFO UI
+function driverBlock(o){
 
-if(status==="pending") return "En attente";
-if(status==="accepted") return "Acceptée";
-if(status==="preparing") return "En préparation";
-if(status==="ready") return "Prêt";
-if(status==="picked") return "En livraison";
-if(status==="delivered") return "Livré";
+if(!o.assignedDriverId) return "";
 
-return status;
+return `
+<div class="driver">
+
+<img src="${o.driverPhoto || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}">
+
+<div class="driver-info">
+<b>${o.driverName || "Livreur"}</b><br>
+🚗 ${o.vehicleType || "-"} ${o.vehicleBrand || ""} (${o.vehicleColor || ""})<br>
+🪪 ${o.plateNumber || "-"}
+</div>
+
+</div>
+`;
 }
 
-/// ACTIONS
-function getActions(o){
+// ACTIONS
+function actions(o){
 
-if(o.status==="pending"){
-return `<button class="btn" onclick="accept('${o.id}')">Accepter</button>`;
+if(o.status==="pending_restaurant"){
+return `
+<button class="btn" onclick="accept('${o.id}')">Accepter</button>
+<button class="btn red" onclick="reject('${o.id}')">Refuser</button>
+`;
 }
 
 if(o.status==="accepted"){
@@ -203,37 +166,46 @@ return `<button class="btn" onclick="ready('${o.id}')">Marquer prêt</button>`;
 return "";
 }
 
-/// ACTIONS UPDATE
+// UPDATE SÉCURISÉ
+async function secureUpdate(id,data){
+
+try{
+
+await db.runTransaction(async tx=>{
+let ref=db.collection("orders").doc(id);
+let snap=await tx.get(ref);
+
+if(!snap.exists) return;
+
+let d=snap.data();
+
+if(d.restaurant!==restaurantName) return;
+if(d.status==="delivered") return;
+
+tx.update(ref,data);
+});
+
+}catch(e){
+alert("Erreur réseau");
+}
+}
+
+// ACTIONS
 function accept(id){
-updateOrder(id,{status:"accepted"});
+secureUpdate(id,{status:"accepted"});
+}
+
+function reject(id){
+secureUpdate(id,{status:"rejected"});
 }
 
 function prepare(id){
-updateOrder(id,{status:"preparing"});
+secureUpdate(id,{status:"preparing"});
 }
 
 function ready(id){
-updateOrder(id,{status:"ready"});
+secureUpdate(id,{status:"ready"});
 }
-
-/// MENU
-function menu(){
-app.innerHTML=`
-<div class="header">Menu</div>
-<div class="card">Gestion du menu (à connecter plus tard)</div>
-`;
-}
-
-/// PROFIL
-function profile(){
-app.innerHTML=`
-<div class="header">Profil restaurant</div>
-<div class="card">Informations du restaurant</div>
-`;
-}
-
-/// INIT
-loadOrders();
 
 </script>
 
