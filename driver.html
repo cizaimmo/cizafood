@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ciza Driver</title>
+<title>Ciza Driver PRO MAX</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <style>
 body{margin:0;background:#0B0B0C;color:#fff;font-family:Arial;}
-#map{height:60vh;}
+#map{height:55vh;}
 .btn{
 width:100%;
 padding:16px;
@@ -19,8 +19,12 @@ background:#D4AF37;
 color:#000;
 font-weight:bold;
 margin-top:10px;
+border-radius:12px;
 }
+.btn.red{background:#ff4444;color:#fff;}
 .card{padding:15px;}
+.info{margin-top:10px;font-size:14px;color:#ccc;}
+.big{font-size:18px;font-weight:bold;margin-top:10px;}
 </style>
 </head>
 
@@ -29,94 +33,259 @@ margin-top:10px;
 <div id="map"></div>
 
 <div class="card">
+<div id="status">🚗 En attente...</div>
+<div id="eta" class="big"></div>
+
 <button class="btn" onclick="start()">📍 Activer GPS</button>
-<button class="btn" onclick="accept()">✅ Accepter course</button>
-<button class="btn" onclick="pickup()">🚗 En route</button>
-<button class="btn" onclick="deliver()">📦 Livré</button>
+<button class="btn" onclick="pickup()">📦 Pickup</button>
+<button class="btn" onclick="deliver()">🏁 Livré</button>
+<button class="btn red" onclick="refuse()">❌ Refuser</button>
+<button class="btn" onclick="navigate()">🧭 Naviguer</button>
+
+<div class="info" id="info"></div>
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, doc, runTransaction, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const firebaseConfig = {
-apiKey: "AIzaSyA-Dh3VguPXVk27DwOkMjRbYIXEhrEPcsM",
-authDomain: "cizafood.firebaseapp.com",
-projectId: "cizafood"
-};
+const app = initializeApp({
+apiKey:"AIzaSyA-Dh3VguPXVk27DwOkMjRbYIXEhrEPcsM",
+authDomain:"cizafood.firebaseapp.com",
+projectId:"cizafood"
+});
 
-const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-let currentOrderId = null;
-let myLat = -3.38;
-let myLng = 29.36;
-let map;
+let driverId="driver_"+Math.floor(Math.random()*100000);
+let currentOrderId=null;
+let currentOrder=null;
 
-// MAP INIT
-map = L.map('map').setView([myLat,myLng],13);
+let myLat=-3.38,myLng=29.36;
 
+let map=L.map('map').setView([myLat,myLng],13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+let driverMarker=L.marker([myLat,myLng]).addTo(map);
 
-let marker = L.marker([myLat,myLng]).addTo(map);
-
-// GPS LIVE
+// GPS LIVE + UPDATE FIRESTORE
 function start(){
 navigator.geolocation.watchPosition(pos=>{
-myLat = pos.coords.latitude;
-myLng = pos.coords.longitude;
+myLat=pos.coords.latitude;
+myLng=pos.coords.longitude;
 
-marker.setLatLng([myLat,myLng]);
-map.setView([myLat,myLng]);
+driverMarker.setLatLng([myLat,myLng]);
 
-// 🔥 UPDATE FIRESTORE
 if(currentOrderId){
 updateDoc(doc(db,"orders",currentOrderId),{
-driverLat: myLat,
-driverLng: myLng
+driverLat:myLat,
+driverLng:myLng,
+lastDriverUpdate:Date.now()
+});
+}
 });
 }
 
-});
+// DISTANCE
+function dist(a,b,c,d){
+let R=6371;
+let dLat=(c-a)*Math.PI/180;
+let dLng=(d-b)*Math.PI/180;
+let x=Math.sin(dLat/2)**2+
+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*
+Math.sin(dLng/2)**2;
+return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
-// LISTEN ORDERS
+// ETA
+function eta(lat,lng){
+let d=dist(myLat,myLng,lat,lng);
+return Math.max(3,Math.round((d/30)*60));
+}
+
+// MATCHING
 onSnapshot(collection(db,"orders"),snap=>{
-snap.forEach(d=>{
-let data = d.data();
+snap.forEach(async d=>{
 
-// prendre première commande pending
-if(data.status==="pending" && !currentOrderId){
-currentOrderId = d.id;
-console.log("Order assigned:", currentOrderId);
+let o=d.data();
+if(!o) return;
+
+// VALID DATA
+if(!o.restaurantLat || !o.clientLat) return;
+
+// MATCH
+if(
+o.status==="ready" &&
+!currentOrderId &&
+(!o.refusedDrivers || !o.refusedDrivers.includes(driverId))
+){
+
+let distance=dist(myLat,myLng,o.restaurantLat,o.restaurantLng);
+
+if(distance<5){
+
+try{
+await runTransaction(db, async tx=>{
+let ref=doc(db,"orders",d.id);
+let fresh=await tx.get(ref);
+
+if(!fresh.exists()) return;
+let data=fresh.data();
+
+if(data.assignedDriverId) return;
+if(data.status!=="ready") return;
+
+tx.update(ref,{
+assignedDriverId:driverId,
+status:"accepted",
+driverAcceptedAt:Date.now()
+});
+
+currentOrderId=d.id;
+currentOrder=data;
+});
+}catch(e){}
+}
+}
+
+// TRACK
+if(d.id===currentOrderId){
+
+currentOrder=o;
+
+// TIMEOUT
+if(o.status==="accepted" && Date.now()-o.driverAcceptedAt>600000){
+refuse();
+return;
+}
+
+updateUI(o);
+updateMap(o);
 }
 });
 });
 
-// ACTIONS
-window.accept = async function(){
-if(!currentOrderId)return;
+// UI
+function updateUI(o){
 
-await updateDoc(doc(db,"orders",currentOrderId),{
-status:"accepted"
+let targetLat=o.status==="accepted"?o.restaurantLat:o.clientLat;
+let targetLng=o.status==="accepted"?o.restaurantLng:o.clientLng;
+
+document.getElementById("status").innerText=
+o.status==="accepted"?"📦 Aller au resto":
+o.status==="picked"?"🚗 Livraison":
+o.status==="delivered"?"✅ Terminé":"⌛";
+
+document.getElementById("eta").innerText=
+"⏱ "+eta(targetLat,targetLng)+" min";
+
+document.getElementById("info").innerHTML=`
+🏪 ${o.restaurantName || "-"}<br>
+📍 ${o.restaurantAddress || "-"}<br>
+📞 ${o.phone || "-"}
+`;
+}
+
+// MAP
+function updateMap(o){
+
+if(window.line) map.removeLayer(window.line);
+if(window.markerA) map.removeLayer(window.markerA);
+
+let target=o.status==="accepted"
+?[o.restaurantLat,o.restaurantLng]
+:[o.clientLat,o.clientLng];
+
+window.markerA=L.marker(target).addTo(map);
+
+window.line=L.polyline([[myLat,myLng],target],{
+color:o.status==="accepted"?"#D4AF37":"#00FFAA"
+}).addTo(map);
+
+map.setView(target,13);
+}
+
+// PICKUP sécurisé
+window.pickup=async()=>{
+if(!currentOrderId) return;
+
+let o=currentOrder;
+let d=dist(myLat,myLng,o.restaurantLat,o.restaurantLng);
+
+if(d>0.3){
+alert("❌ Trop loin du restaurant");
+return;
+}
+
+await runTransaction(db, async tx=>{
+let ref=doc(db,"orders",currentOrderId);
+let snap=await tx.get(ref);
+
+if(snap.data().assignedDriverId!==driverId) return;
+
+tx.update(ref,{status:"picked"});
 });
 }
 
-window.pickup = async function(){
-if(!currentOrderId)return;
+// DELIVERY sécurisé
+window.deliver=async()=>{
+if(!currentOrderId) return;
 
-await updateDoc(doc(db,"orders",currentOrderId),{
-status:"picked"
-});
+let o=currentOrder;
+let d=dist(myLat,myLng,o.clientLat,o.clientLng);
+
+if(d>0.3){
+alert("❌ Pas encore arrivé chez client");
+return;
 }
 
-window.deliver = async function(){
-if(!currentOrderId)return;
+await runTransaction(db, async tx=>{
+let ref=doc(db,"orders",currentOrderId);
+let snap=await tx.get(ref);
 
-await updateDoc(doc(db,"orders",currentOrderId),{
-status:"delivered"
+if(snap.data().assignedDriverId!==driverId) return;
+
+tx.update(ref,{
+status:"delivered",
+completedAt:Date.now()
 });
+});
+
+currentOrderId=null;
+}
+
+// REFUSE
+window.refuse=async()=>{
+if(!currentOrderId) return;
+
+await runTransaction(db, async tx=>{
+let ref=doc(db,"orders",currentOrderId);
+let snap=await tx.get(ref);
+let data=snap.data();
+
+tx.update(ref,{
+assignedDriverId:null,
+status:"ready",
+refusedDrivers:[...(data.refusedDrivers||[]),driverId]
+});
+});
+
+currentOrderId=null;
+}
+
+// NAV
+window.navigate=()=>{
+if(!currentOrder) return;
+
+let lat=currentOrder.status==="accepted"
+?currentOrder.restaurantLat
+:currentOrder.clientLat;
+
+let lng=currentOrder.status==="accepted"
+?currentOrder.restaurantLng
+:currentOrder.clientLng;
+
+window.open(`https://www.google.com/maps?q=${lat},${lng}`);
 }
 
 </script>
