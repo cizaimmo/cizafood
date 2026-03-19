@@ -415,13 +415,83 @@ renderTracking(o);
 });
 }
 
-function renderTracking(o){
-app.innerHTML=`<div class="header">Suivi</div><div id="map"></div>`;
-let map=L.map('map').setView([o.clientLat,o.clientLng],13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-L.marker([o.clientLat,o.clientLng]).addTo(map);
-}
 
+function renderTracking(o){
+
+let steps={
+pending:"Commande confirmée",
+accepted:"Restaurant accepte",
+preparing:"Préparation en cours",
+ready:"Commande prête",
+picked:"Chauffeur en route",
+delivered:"Livré"
+};
+
+app.innerHTML=`
+
+<div style="display:flex;align-items:center;padding:20px;gap:10px;">
+
+<button onclick="renderHome()" 
+style="
+background:#151517;
+border:none;
+color:#fff;
+padding:10px 14px;
+border-radius:12px;
+font-size:16px;
+">
+←
+</button>
+
+<div style="font-size:22px;font-weight:800;">Suivi</div>
+
+</div>
+
+<!-- STATUS CARD -->
+<div style="margin:15px;background:#151517;padding:18px;border-radius:18px;">
+<div style="font-size:16px;font-weight:700;">
+${steps[o.status] || "En cours"}
+</div>
+
+<div style="font-size:13px;color:#aaa;margin-top:5px;">
+Votre commande est en traitement
+</div>
+</div>
+
+<!-- MAP -->
+<div id="map"></div>
+
+<!-- STEPS -->
+<div style="padding:10px 15px;">
+${Object.keys(steps).map(s=>`
+<div class="step ${isActive(o.status,s)?"activeStep":""}">
+${steps[s]}
+</div>
+`).join("")}
+</div>
+
+`;
+
+// MAP
+let map=L.map('map').setView([o.clientLat,o.clientLng],13);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+// POSITIONS
+let client=[o.clientLat,o.clientLng];
+let driver=[
+o.driverLat || o.clientLat+0.01,
+o.driverLng || o.clientLng+0.01
+];
+
+// MARKERS
+L.marker(client).addTo(map).bindPopup("Client");
+L.marker(driver).addTo(map).bindPopup("Chauffeur");
+
+// LIGNE
+L.polyline([driver,client]).addTo(map);
+}
+  
 // PROFIL PREMIUM
 window.profile=function(){
 
