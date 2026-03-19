@@ -117,8 +117,18 @@ let cart=[];
 let currentOrderId=null;
 let userLocation=null;
 
+const restaurantData = {
+id: "resto_chez_andre",
+name: "Chez André",
+address: "Rohero, Bujumbura",
+lat: -3.3762,
+lng: 29.3644,
+phone: "+25779000000"
+};
+
 // GPS
 navigator.geolocation.getCurrentPosition(
+
 pos=>{
 userLocation={lat:pos.coords.latitude,lng:pos.coords.longitude};
 },
@@ -226,81 +236,52 @@ style="width:100%;height:220px;object-fit:cover;">
 <div style="position:absolute;bottom:0;left:0;right:0;padding:20px;
 background:linear-gradient(transparent,rgba(0,0,0,0.95));">
 
-<div style="font-size:22px;font-weight:800;">Chez André</div>
+<div style="font-size:22px;font-weight:800;">${restaurantData.name}</div>
 <div style="color:#ccc;font-size:13px;">Cuisine locale • ⭐ 4.7 • 20 min</div>
+<div style="color:#aaa;font-size:12px;margin-top:4px;">📍 ${restaurantData.address}</div>
 
 </div>
 </div>
 
-<!-- MENU TITLE -->
 <div class="header" style="font-size:20px;">🍽 Menu</div>
 
-<!-- ITEM 1 -->
 <div class="menu" style="display:flex;gap:12px;align-items:center;">
-
 <img src="https://images.unsplash.com/photo-1604908176997-431df7d95f16"
 style="width:90px;height:90px;border-radius:14px;object-fit:cover;">
-
 <div style="flex:1;">
 <div style="font-weight:700;">Poulet braisé</div>
 <div style="font-size:13px;color:#aaa;">Grillé au feu • Épicé</div>
 <div class="price">9000 BIF</div>
 </div>
-
-<button class="btn" style="width:auto;padding:10px 14px;"
-onclick="add('Poulet braisé',9000)">
-+</button>
-
+<button class="btn" style="width:auto;padding:10px 14px;" onclick="add('Poulet braisé',9000)">+</button>
 </div>
 
-<!-- ITEM 2 -->
 <div class="menu" style="display:flex;gap:12px;align-items:center;">
-
 <img src="https://images.unsplash.com/photo-1586190848861-99aa4a171e90"
 style="width:90px;height:90px;border-radius:14px;object-fit:cover;">
-
 <div style="flex:1;">
 <div style="font-weight:700;">Burger maison</div>
 <div style="font-size:13px;color:#aaa;">Bœuf + fromage</div>
 <div class="price">7000 BIF</div>
 </div>
-
-<button class="btn" style="width:auto;padding:10px 14px;"
-onclick="add('Burger maison',7000)">
-+</button>
-
+<button class="btn" style="width:auto;padding:10px 14px;" onclick="add('Burger maison',7000)">+</button>
 </div>
 
-<!-- ITEM 3 -->
 <div class="menu" style="display:flex;gap:12px;align-items:center;">
-
 <img src="https://images.unsplash.com/photo-1540189549336-e6e99c3679fe"
 style="width:90px;height:90px;border-radius:14px;object-fit:cover;">
-
 <div style="flex:1;">
 <div style="font-weight:700;">Pizza spéciale</div>
 <div style="font-size:13px;color:#aaa;">Fromage • Tomate</div>
 <div class="price">8000 BIF</div>
 </div>
-
-<button class="btn" style="width:auto;padding:10px 14px;"
-onclick="add('Pizza spéciale',8000)">
-+</button>
-
+<button class="btn" style="width:auto;padding:10px 14px;" onclick="add('Pizza spéciale',8000)">+</button>
 </div>
 
-<!-- FLOAT CART BUTTON -->
-<div style="
-position:fixed;
-bottom:80px;
-left:15px;
-right:15px;
-">
-
+<div style="position:fixed;bottom:80px;left:15px;right:15px;">
 <button class="btn" onclick="openCart()">
 🛒 Voir le panier (${cart.length})
 </button>
-
 </div>
 
 `;
@@ -390,9 +371,14 @@ notifShow("Complète toutes les informations");
 return;
 }
 
-// DATA PROPRE
+// DATA PROPRE (CLIENT + RESTO)
 const data={
-restaurant:"Chez André",
+
+restaurantId: restaurantData.id,
+restaurantName: restaurantData.name,
+restaurantAddress: restaurantData.address,
+restaurantLat: restaurantData.lat,
+restaurantLng: restaurantData.lng,
 
 clientName:"Client Ciza",
 clientId:"client_demo",
@@ -413,21 +399,27 @@ phone:phone.value,
 createdAt:Date.now()
 };
 
-// 🔥 1. AFFICHAGE IMMÉDIAT TRACKING
-renderTracking(data);
+try{
 
-// 🔥 2. ENVOI FIREBASE
+// 🔥 ENVOI FIRESTORE
 const ref = await addDoc(collection(db,"orders"),data);
 
 currentOrderId = ref.id;
+
+// 🔥 RESET PANIER
 cart=[];
 
+// 🔥 NOTIF
 notifShow("Commande envoyée");
 
-// 🔥 3. LISTEN LIVE
+// 🔥 TRACKING LIVE
 track();
+
+}catch(e){
+console.error(e);
+notifShow("Erreur commande ❌");
 }
-// TRACK
+}
 function track(){
 onSnapshot(doc(db,"orders",currentOrderId),(d)=>{
 let o=d.data();
