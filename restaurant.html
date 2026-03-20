@@ -83,6 +83,12 @@ border-radius:14px;
 margin-bottom:12px;
 border:1px solid #222;
 font-size:15px;
+transition:0.2s;
+}
+
+.card:hover{
+transform:scale(1.02);
+border:1px solid #D4AF37;
 }
 
 .card.urgent{
@@ -145,22 +151,59 @@ background:#25D366;
 color:#000;
 }
 
-/* 🔥 AJOUT MENU STYLE */
+/* 🔥 MENU STYLE AMÉLIORÉ */
 .menu-box{
 padding:15px;
 border-top:1px solid #222;
 }
-input{
+
+#menu{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:12px;
+max-height:350px;
+overflow-y:auto;
+padding-top:10px;
+}
+
+input, select{
 width:100%;
 padding:10px;
 margin-top:8px;
 border-radius:8px;
 border:none;
 }
-img{
-max-width:100%;
+
+.card img{
+width:100%;
+height:110px;
+object-fit:cover;
 border-radius:10px;
 margin-top:5px;
+}
+
+.menu-title{
+font-weight:700;
+font-size:14px;
+margin-top:6px;
+}
+
+.menu-price{
+color:#D4AF37;
+font-weight:800;
+margin-top:4px;
+}
+
+.menu-meta{
+font-size:11px;
+color:#aaa;
+margin-top:4px;
+}
+
+.card .btn{
+padding:8px;
+font-size:12px;
+margin-top:6px;
 }
 </style>
 </head>
@@ -179,13 +222,39 @@ margin-top:5px;
 
 <div class="board" id="board"></div>
 
-<!-- 🔥 AJOUT MENU (NE TOUCHE PAS TON FLOW EXISTANT) -->
+<!-- 🔥 AJOUT MENU -->
 <div class="menu-box">
 <h3>🍔 Gestion Menu</h3>
+
 <input id="name" placeholder="Nom du plat">
 <input id="price" placeholder="Prix">
 <input type="file" id="photo">
+
+<!-- 🔥 NOUVEAU -->
+<select id="category">
+<option value="plat">Plat</option>
+<option value="boisson">Boisson</option>
+</select>
+
+<select id="type">
+<option value="">Type</option>
+<option value="eau">Eau</option>
+<option value="fanta">Fanta</option>
+<option value="jus">Jus</option>
+<option value="biere">Bière</option>
+</select>
+
+<select id="size">
+<option value="">Taille</option>
+<option value="petit">Petit</option>
+<option value="moyen">Moyen</option>
+<option value="grand">Grand</option>
+</select>
+
+<input id="description" placeholder="Description">
+
 <button class="btn" onclick="addItem()">Ajouter</button>
+
 <div id="menu"></div>
 </div>
 
@@ -199,8 +268,6 @@ storageBucket:"cizafood.firebasestorage.app"
 });
 
 const db = firebase.firestore();
-
-/* 🔥 AJOUT STORAGE */
 const storage = firebase.storage();
 
 const restaurantName="Chez André";
@@ -220,19 +287,13 @@ let known = new Set();
 function getTimer(o){
 let base=o.createdAt || o.restaurantAcceptedAt;
 if(!base) return "";
-
 let min=Math.floor((Date.now()-base)/60000);
 let urgent=min>15;
-
-return {
-text:`⏱ ${min} min`,
-urgent
-};
+return {text:`⏱ ${min} min`,urgent};
 }
 
 function driver(o){
 if(!o.assignedDriverId) return "";
-
 return `
 <div class="driver">
 <img src="${o.driverPhoto || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}">
@@ -246,55 +307,32 @@ ${o.plateNumber || ""}
 }
 
 function card(o){
-
 let t=getTimer(o);
-
 return `
 <div class="card ${t.urgent?"urgent":""}">
-
 <b>${o.clientName || "Client"}</b>
-
-<div class="timer ${t.urgent?"red":""}">
-${t.text}
-</div>
-
-<div class="meta">
-📍 ${o.deliveryAddress?.quartier || ""}<br>
-📞 ${o.clientPhone || ""}
-</div>
-
-<div class="meta">
-🍽 ${(o.items||[]).map(i=>i.name).join(", ")}
-</div>
-
+<div class="timer ${t.urgent?"red":""}">${t.text}</div>
+<div class="meta">📍 ${o.deliveryAddress?.quartier || ""}<br>📞 ${o.clientPhone || ""}</div>
+<div class="meta">🍽 ${(o.items||[]).map(i=>i.name).join(", ")}</div>
 <div class="meta">💰 ${o.total || 0} BIF</div>
-
 ${driver(o)}
-
 <a class="btn whatsapp" href="https://wa.me/${(o.clientPhone||"").replace("+","")}">WhatsApp</a>
 <a class="btn" href="tel:${o.clientPhone}">Appeler</a>
-
 ${actions(o)}
-
 </div>`;
 }
 
 function actions(o){
-
 if(o.status==="pending_restaurant"){
-return `
-<button class="btn" onclick="update('${o.id}','accepted')">Accepter</button>
+return `<button class="btn" onclick="update('${o.id}','accepted')">Accepter</button>
 <button class="btn red" onclick="update('${o.id}','rejected')">Refuser</button>`;
 }
-
 if(o.status==="accepted"){
 return `<button class="btn" onclick="update('${o.id}','preparing')">Préparer</button>`;
 }
-
 if(o.status==="preparing"){
 return `<button class="btn green" onclick="update('${o.id}','ready')">Commande prête</button>`;
 }
-
 return "";
 }
 
@@ -302,36 +340,22 @@ async function update(id,status){
 await db.runTransaction(async tx=>{
 let ref=db.collection("orders").doc(id);
 let snap=await tx.get(ref);
-
 if(!snap.exists) return;
 let d=snap.data();
-
 if(d.restaurantName !== restaurantName) return;
-
 if(status==="preparing" && d.status!=="accepted") return;
 if(status==="ready" && d.status!=="preparing") return;
-
-tx.update(ref,{
-status:status,
-restaurantAcceptedAt:d.restaurantAcceptedAt || Date.now()
-});
+tx.update(ref,{status:status,restaurantAcceptedAt:d.restaurantAcceptedAt || Date.now()});
 });
 }
 
 db.collection("orders").onSnapshot(snap=>{
-
 let orders=[];
-
 snap.forEach(doc=>{
 let o=doc.data();
 if(o.restaurantName !== restaurantName) return;
-
 orders.push({id:doc.id,...o});
-
-if(!known.has(doc.id)){
-playSound();
-known.add(doc.id);
-}
+if(!known.has(doc.id)){playSound();known.add(doc.id);}
 });
 
 kpi.innerHTML=`
@@ -342,30 +366,11 @@ kpi.innerHTML=`
 `;
 
 board.innerHTML=`
-<div class="column">
-<h3>🆕 Nouvelles</h3>
-${orders.filter(o=>o.status==="pending_restaurant").map(card).join("")}
-</div>
-
-<div class="column">
-<h3>✅ Acceptées</h3>
-${orders.filter(o=>o.status==="accepted").map(card).join("")}
-</div>
-
-<div class="column">
-<h3>👨‍🍳 Préparation</h3>
-${orders.filter(o=>o.status==="preparing").map(card).join("")}
-</div>
-
-<div class="column">
-<h3>📦 Prêtes</h3>
-${orders.filter(o=>o.status==="ready").map(card).join("")}
-</div>
-
-<div class="column">
-<h3>🚗 Livraison</h3>
-${orders.filter(o=>o.status==="picked").map(card).join("")}
-</div>
+<div class="column"><h3>🆕 Nouvelles</h3>${orders.filter(o=>o.status==="pending_restaurant").map(card).join("")}</div>
+<div class="column"><h3>✅ Acceptées</h3>${orders.filter(o=>o.status==="accepted").map(card).join("")}</div>
+<div class="column"><h3>👨‍🍳 Préparation</h3>${orders.filter(o=>o.status==="preparing").map(card).join("")}</div>
+<div class="column"><h3>📦 Prêtes</h3>${orders.filter(o=>o.status==="ready").map(card).join("")}</div>
+<div class="column"><h3>🚗 Livraison</h3>${orders.filter(o=>o.status==="picked").map(card).join("")}</div>
 `;
 });
 
@@ -376,6 +381,11 @@ async function addItem(){
 let name = document.getElementById("name").value;
 let price = document.getElementById("price").value;
 let file = document.getElementById("photo").files[0];
+
+let category = document.getElementById("category").value;
+let type = document.getElementById("type").value;
+let size = document.getElementById("size").value;
+let description = document.getElementById("description").value;
 
 let photoUrl="";
 
@@ -390,14 +400,16 @@ restaurant:restaurantName,
 name:name,
 price:Number(price),
 photo:photoUrl,
+category:category,
+type:type,
+size:size,
+description:description,
 createdAt:Date.now()
 });
 
-// UX clean
 document.getElementById("name").value="";
 document.getElementById("price").value="";
 document.getElementById("photo").value="";
-
 alert("✅ Plat ajouté");
 }
 
@@ -420,11 +432,12 @@ if(i.restaurant!==restaurantName) return;
 html+=`
 <div class="card">
 ${i.photo ? `<img src="${i.photo}">` : ""}
-<b>${i.name}</b><br>
-💰 ${i.price} BIF
+<div class="menu-title">${i.name}</div>
+<div class="menu-price">💰 ${i.price} BIF</div>
+<div class="menu-meta">${i.category||""} ${i.type||""} ${i.size||""}</div>
 
-<button class="btn" onclick="editItem('${doc.id}','${i.name}',${i.price})">Modifier</button>
-<button class="btn red" onclick="deleteItem('${doc.id}')">Supprimer</button>
+<button class="btn" onclick="editItem('${doc.id}','${i.name}',${i.price})">✏️</button>
+<button class="btn red" onclick="deleteItem('${doc.id}')">🗑</button>
 </div>`;
 });
 menu.innerHTML=html;
