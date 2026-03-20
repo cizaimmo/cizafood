@@ -10,6 +10,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
+<!-- 🔥 AJOUT STORAGE (NE TOUCHE PAS TON CODE) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
 <style>
 body{
 margin:0;
@@ -91,6 +94,7 @@ box-shadow:0 0 10px red;
 font-size:13px;
 color:#aaa;
 margin-top:6px;
+line-height:1.4;
 }
 
 .timer{
@@ -140,6 +144,24 @@ color:#fff;
 background:#25D366;
 color:#000;
 }
+
+/* 🔥 AJOUT MENU STYLE */
+.menu-box{
+padding:15px;
+border-top:1px solid #222;
+}
+input{
+width:100%;
+padding:10px;
+margin-top:8px;
+border-radius:8px;
+border:none;
+}
+img{
+max-width:100%;
+border-radius:10px;
+margin-top:5px;
+}
 </style>
 </head>
 
@@ -157,15 +179,30 @@ color:#000;
 
 <div class="board" id="board"></div>
 
+<!-- 🔥 AJOUT MENU (NE TOUCHE PAS TON FLOW EXISTANT) -->
+<div class="menu-box">
+<h3>🍔 Gestion Menu</h3>
+<input id="name" placeholder="Nom du plat">
+<input id="price" placeholder="Prix">
+<input type="file" id="photo">
+<button class="btn" onclick="addItem()">Ajouter</button>
+<div id="menu"></div>
+</div>
+
 <script>
 
 firebase.initializeApp({
 apiKey:"AIzaSyA-Dh3VguPXVk27DwOkMjRbYIXEhrEPcsM",
 authDomain:"cizafood.firebaseapp.com",
-projectId:"cizafood"
+projectId:"cizafood",
+storageBucket:"cizafood.firebasestorage.app"
 });
 
 const db = firebase.firestore();
+
+/* 🔥 AJOUT STORAGE */
+const storage = firebase.storage();
+
 const restaurantName="Chez André";
 
 setInterval(()=>{
@@ -201,6 +238,7 @@ return `
 <img src="${o.driverPhoto || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}">
 <div>
 <b>${o.driverName || ""}</b><br>
+📞 ${o.driverPhone || ""}<br>
 ${o.vehicleType || ""} ${o.vehicleColor || ""}<br>
 ${o.plateNumber || ""}
 </div>
@@ -329,6 +367,67 @@ ${orders.filter(o=>o.status==="ready").map(card).join("")}
 ${orders.filter(o=>o.status==="picked").map(card).join("")}
 </div>
 `;
+});
+
+/* 🔥 MENU CRUD */
+
+async function addItem(){
+
+let name = document.getElementById("name").value;
+let price = document.getElementById("price").value;
+let file = document.getElementById("photo").files[0];
+
+let photoUrl="";
+
+if(file){
+let ref=storage.ref("menu/"+Date.now()+"_"+file.name);
+await ref.put(file);
+photoUrl=await ref.getDownloadURL();
+}
+
+await db.collection("items").add({
+restaurant:restaurantName,
+name:name,
+price:Number(price),
+photo:photoUrl,
+createdAt:Date.now()
+});
+
+// UX clean
+document.getElementById("name").value="";
+document.getElementById("price").value="";
+document.getElementById("photo").value="";
+
+alert("✅ Plat ajouté");
+}
+
+function deleteItem(id){
+db.collection("items").doc(id).delete();
+}
+
+function editItem(id,name,price){
+let n=prompt("Nom",name);
+let p=prompt("Prix",price);
+db.collection("items").doc(id).update({name:n,price:Number(p)});
+}
+
+db.collection("items").onSnapshot(snap=>{
+let html="";
+snap.forEach(doc=>{
+let i=doc.data();
+if(i.restaurant!==restaurantName) return;
+
+html+=`
+<div class="card">
+${i.photo ? `<img src="${i.photo}">` : ""}
+<b>${i.name}</b><br>
+💰 ${i.price} BIF
+
+<button class="btn" onclick="editItem('${doc.id}','${i.name}',${i.price})">Modifier</button>
+<button class="btn red" onclick="deleteItem('${doc.id}')">Supprimer</button>
+</div>`;
+});
+menu.innerHTML=html;
 });
 
 </script>
