@@ -2,84 +2,57 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CizaFood+</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Inter',sans-serif;background:#0B0B0C;color:#fff;}
-.app{max-width:420px;margin:auto;min-height:100vh;padding-bottom:120px;}
-.header{font-size:26px;font-weight:800;padding:20px;}
+.app{max-width:420px;margin:auto;padding-bottom:120px;}
 
-.restaurant{
-margin:15px;
-border-radius:22px;
-overflow:hidden;
-position:relative;
-box-shadow:0 12px 35px rgba(0,0,0,0.7);
-transition:transform 0.2s ease, box-shadow 0.2s ease;
+.header{
+display:flex;align-items:center;gap:10px;
+font-size:20px;font-weight:800;padding:20px;
 }
 
-.restaurant:active{
-transform:scale(0.98);
-box-shadow:0 6px 20px rgba(0,0,0,0.8);
+.back{
+background:#1a1a1d;border-radius:50%;
+width:35px;height:35px;
+display:flex;align-items:center;justify-content:center;
+cursor:pointer;
 }
 
-.restaurant img{
-width:100%;
-height:190px;
-object-fit:cover;
-filter:brightness(0.95);
-}
-
-.restaurant-info{
-position:absolute;
-bottom:0;
-left:0;
-right:0;
-padding:16px;
-background:linear-gradient(transparent,rgba(0,0,0,0.95));
-}
-
-.restaurant-info .meta{
-font-size:13px;
-color:#ddd;
-margin-top:4px;
-}
 .menu{
-margin:10px;
+margin:10px;background:#151517;padding:12px;
+border-radius:16px;display:flex;gap:10px;align-items:center;
+}
+
+.menu img{width:90px;height:90px;border-radius:12px;object-fit:cover;}
+
+.menu-info{flex:1;}
+.menu-price{color:#D4AF37;font-weight:800;}
+
+.btn{
+padding:10px;border:none;border-radius:10px;
+background:#D4AF37;font-weight:800;width:100%;
+}
+
+.step{
+margin:10px;padding:12px;border-radius:12px;
 background:#151517;
-padding:14px;
-border-radius:16px;
-white-space:nowrap;
-font-size:14px;
-}
-.btn{width:100%;padding:14px;border:none;border-radius:16px;background:#D4AF37;color:#000;font-weight:800;}
-
-input,select{
-width:100%;
-padding:14px;
-margin:6px 0;
-border-radius:12px;
-border:none;
-background:#1a1a1d;
-color:#fff;
 }
 
-#map{height:220px;border-radius:18px;margin:15px;}
+.activeStep{
+border:1px solid #D4AF37;
+}
 
-.tabbar{position:fixed;bottom:0;left:0;right:0;background:#0B0B0C;border-top:1px solid #1c1c1c;display:flex;justify-content:space-around;padding:14px;}
-.tab{color:#777;}
-.active{color:#D4AF37;}
-
-.notif{position:fixed;top:20px;left:10px;right:10px;background:#D4AF37;color:#000;padding:14px;border-radius:14px;text-align:center;display:none;}
-
-.step{margin:10px;background:#151517;padding:12px;border-radius:12px;}
-.activeStep{border:1px solid #D4AF37;}
+.notif{
+position:fixed;top:20px;left:10px;right:10px;
+background:#D4AF37;color:#000;padding:14px;
+border-radius:14px;text-align:center;display:none;
+}
 </style>
 </head>
 
@@ -88,138 +61,41 @@ color:#fff;
 <div class="notif" id="notif"></div>
 <div class="app" id="app"></div>
 
-<div class="tabbar">
-<div class="tab active" onclick="renderHome()">🏠</div>
-<div class="tab" onclick="openCart()">🛒</div>
-<div class="tab" onclick="profile()">👤</div>
-</div>
-
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, deleteUser } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-const firebaseConfig = {
-apiKey: "AIzaSyA-Dh3VguPXVk27DwOkMjRbYIXEhrEPcsM",
-authDomain: "cizafood.firebaseapp.com",
-projectId: "cizafood",
-storageBucket: "cizafood.firebasestorage.app",
-messagingSenderId: "695527669049",
-appId: "1:695527669049:web:256ddb7aaf2af2df293ce8"
-};
+const appF = initializeApp({
+apiKey:"AIzaSyA-Dh3VguPXVk27DwOkMjRbYIXEhrEPcsM",
+projectId:"cizafood"
+});
 
-const appF = initializeApp(firebaseConfig);
 const db = getFirestore(appF);
-const auth = getAuth();
 
 let cart=[];
 let currentOrderId=null;
-let userLocation=null;
+let unsubscribeMenu=null;
 
-const restaurantData = {
-id: "resto_chez_andre",
-name: "Chez André",
-address: "Rohero, Bujumbura",
-lat: -3.3762,
-lng: 29.3644,
-phone: "+25779000000"
+const restaurantData={
+id:"resto_chez_andre",
+name:"Chez André"
 };
 
-// GPS
-navigator.geolocation.getCurrentPosition(
-
-pos=>{
-userLocation={lat:pos.coords.latitude,lng:pos.coords.longitude};
-},
-()=>{
-notifShow("⚠️ Active ta localisation pour une livraison sécurisée");
-}
-);
-
-// NOTIF
 function notifShow(t){
 notif.innerText=t;
 notif.style.display="block";
 setTimeout(()=>notif.style.display="none",3000);
 }
 
+// HOME
 window.renderHome=function(){
-
 app.innerHTML=`
+<div class="header">CizaFood+</div>
 
-<div class="header">
-CizaFood+
-<div style="font-size:13px;color:#aaa;margin-top:5px;">
-📍 Bujumbura
+<div onclick="openRestaurant()" style="margin:15px;">
+<img src="https://images.unsplash.com/photo-1600891964599-f61ba0e24092" style="width:100%;border-radius:20px;">
 </div>
-</div>
-
-<!-- SEARCH -->
-<div style="padding:0 15px 10px;">
-<input placeholder="🔍 Rechercher un restaurant..." 
-style="width:100%;padding:14px;border-radius:14px;border:none;background:#1a1a1d;color:#fff;">
-</div>
-
-<!-- FILTRES -->
-<div style="display:flex;gap:10px;padding:0 15px 15px;overflow-x:auto;">
-<div class="menu">⚡ Rapide</div>
-<div class="menu">🔥 Offres</div>
-<div class="menu">🚗 Livraison</div>
-<div class="menu">📍 Proche</div>
-</div>
-
-<!-- CATEGORIES -->
-<div style="display:flex;gap:10px;padding:0 15px 10px;overflow-x:auto;">
-<div class="menu">🍔 Fast Food</div>
-<div class="menu">🍕 Pizza</div>
-<div class="menu">🍗 Poulet</div>
-<div class="menu">🍛 Local</div>
-</div>
-
-<!-- SECTION -->
-<div class="header" style="font-size:20px;">🔥 Populaire</div>
-
-<!-- RESTAURANT 1 -->
-<div class="restaurant" onclick="openRestaurant()">
-
-<div style="position:absolute;top:10px;left:10px;background:red;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:700;">
-🔥 Promo
-</div>
-
-<img src="https://images.unsplash.com/photo-1600891964599-f61ba0e24092">
-
-<div class="restaurant-info">
-<div style="font-weight:700;">Chez André</div>
-<div class="meta">Cuisine locale • ⭐ 4.7 • 20 min • 1.2 km</div>
-</div>
-
-</div>
-
-<!-- RESTAURANT 2 -->
-<div class="restaurant">
-
-<img src="https://images.unsplash.com/photo-1540189549336-e6e99c3679fe">
-
-<div class="restaurant-info">
-<div style="font-weight:700;">Pizza City</div>
-<div class="meta">Pizza • ⭐ 4.5 • 25 min • 2 km</div>
-</div>
-
-</div>
-
-<!-- RESTAURANT 3 -->
-<div class="restaurant">
-
-<img src="https://images.unsplash.com/photo-1550547660-d9450f859349">
-
-<div class="restaurant-info">
-<div style="font-weight:700;">Burger House</div>
-<div class="meta">Fast Food • ⭐ 4.6 • 15 min • 800 m</div>
-</div>
-
-</div>
-
 `;
 }
 
@@ -227,382 +103,124 @@ style="width:100%;padding:14px;border-radius:14px;border:none;background:#1a1a1d
 window.openRestaurant=function(){
 
 app.innerHTML=`
+<div class="header">${restaurantData.name}</div>
+<div id="menuList"></div>
 
-<!-- IMAGE HERO -->
-<div style="position:relative;">
-<img src="https://images.unsplash.com/photo-1600891964599-f61ba0e24092" 
-style="width:100%;height:220px;object-fit:cover;">
-
-<div style="position:absolute;bottom:0;left:0;right:0;padding:20px;
-background:linear-gradient(transparent,rgba(0,0,0,0.95));">
-
-<div style="font-size:22px;font-weight:800;">${restaurantData.name}</div>
-<div style="color:#ccc;font-size:13px;">Cuisine locale • ⭐ 4.7 • 20 min</div>
-<div style="color:#aaa;font-size:12px;margin-top:4px;">📍 ${restaurantData.address}</div>
-
+<div style="position:fixed;bottom:20px;left:15px;right:15px;">
+<button class="btn" onclick="openCart()">Panier (${cart.length})</button>
 </div>
-</div>
-
-<div class="header" style="font-size:20px;">🍽 Menu</div>
-
-<div class="menu" style="display:flex;gap:12px;align-items:center;">
-<img src="https://images.unsplash.com/photo-1604908176997-431df7d95f16"
-style="width:90px;height:90px;border-radius:14px;object-fit:cover;">
-<div style="flex:1;">
-<div style="font-weight:700;">Poulet braisé</div>
-<div style="font-size:13px;color:#aaa;">Grillé au feu • Épicé</div>
-<div class="price">9000 BIF</div>
-</div>
-<button class="btn" style="width:auto;padding:10px 14px;" onclick="add('Poulet braisé',9000)">+</button>
-</div>
-
-<div class="menu" style="display:flex;gap:12px;align-items:center;">
-<img src="https://images.unsplash.com/photo-1586190848861-99aa4a171e90"
-style="width:90px;height:90px;border-radius:14px;object-fit:cover;">
-<div style="flex:1;">
-<div style="font-weight:700;">Burger maison</div>
-<div style="font-size:13px;color:#aaa;">Bœuf + fromage</div>
-<div class="price">7000 BIF</div>
-</div>
-<button class="btn" style="width:auto;padding:10px 14px;" onclick="add('Burger maison',7000)">+</button>
-</div>
-
-<div class="menu" style="display:flex;gap:12px;align-items:center;">
-<img src="https://images.unsplash.com/photo-1540189549336-e6e99c3679fe"
-style="width:90px;height:90px;border-radius:14px;object-fit:cover;">
-<div style="flex:1;">
-<div style="font-weight:700;">Pizza spéciale</div>
-<div style="font-size:13px;color:#aaa;">Fromage • Tomate</div>
-<div class="price">8000 BIF</div>
-</div>
-<button class="btn" style="width:auto;padding:10px 14px;" onclick="add('Pizza spéciale',8000)">+</button>
-</div>
-
-<div style="position:fixed;bottom:80px;left:15px;right:15px;">
-<button class="btn" onclick="openCart()">
-🛒 Voir le panier (${cart.length})
-</button>
-</div>
-
 `;
-}
-// ADD
-window.add=function(name,price){
-cart.push({name,price});
-notifShow("Ajouté");
+
+loadMenu();
 }
 
-// PANIER PREMIUM
+// MENU
+function loadMenu(){
+
+if(unsubscribeMenu) unsubscribeMenu();
+
+unsubscribeMenu = onSnapshot(collection(db,"items"),snap=>{
+
+let html="";
+
+snap.forEach(doc=>{
+let i=doc.data();
+
+if(i.restaurantId!==restaurantData.id) return;
+
+html+=`
+<div class="menu">
+<img src="${i.photo||''}">
+<div class="menu-info">
+<div>${i.name}</div>
+<div>${i.price} BIF</div>
+</div>
+<button class="btn" onclick="add('${i.name}',${i.price})">+</button>
+</div>
+`;
+});
+
+menuList.innerHTML=html;
+
+});
+}
+
+// CART
+window.add=(n,p)=>{cart.push({name:n,price:p});notifShow("Ajouté");}
+
 window.openCart=function(){
-
-if(cart.length===0){
-app.innerHTML=`<div class="header">Panier vide</div>`;
-return;
-}
 
 let total=0;
 let html=`<div class="header">Panier</div>`;
 
-cart.forEach((item,index)=>{
-
-if(!item.qty) item.qty=1;
-
-let itemTotal=item.price*item.qty;
-total+=itemTotal;
-
-html+=`
-<div class="menu">
-
-<div style="display:flex;justify-content:space-between;align-items:center;">
-<div>
-<b>${item.name}</b>
-<div class="price">${item.price} BIF</div>
-</div>
-
-<div style="display:flex;gap:10px;">
-<button onclick="decrease(${index})">−</button>
-<div>${item.qty}</div>
-<button onclick="increase(${index})">+</button>
-</div>
-</div>
-
-<div style="margin-top:10px;display:flex;justify-content:space-between;">
-<div>Total : ${itemTotal} BIF</div>
-<button onclick="removeItem(${index})">Supprimer</button>
-</div>
-
-</div>
-`;
+cart.forEach(i=>{
+total+=i.price;
+html+=`<div class="menu">${i.name} - ${i.price}</div>`;
 });
 
-html+=`<div class="menu"><b>Total : ${total} BIF</b></div>`;
-
-html+=`
-<input id="province" placeholder="Province">
-<input id="commune" placeholder="Commune">
-<input id="quartier" placeholder="Quartier">
-<input id="repere" placeholder="Repère">
-<input id="phone" placeholder="Téléphone WhatsApp">
-
-<button class="btn" onclick="checkout(${total})">
-Commander ${total} BIF
-</button>
-`;
+html+=`<div class="menu"><b>Total ${total} BIF</b></div>`;
+html+=`<button class="btn" onclick="checkout(${total})">Commander</button>`;
 
 app.innerHTML=html;
 }
 
-window.increase=i=>{cart[i].qty=(cart[i].qty||1)+1;openCart();}
-window.decrease=i=>{cart[i].qty>1?cart[i].qty--:cart.splice(i,1);openCart();}
-window.removeItem=i=>{cart.splice(i,1);openCart();}
-
 // CHECKOUT
 window.checkout=async function(total){
 
-let province = document.getElementById("province");
-let commune = document.getElementById("commune");
-let quartier = document.getElementById("quartier");
-let repere = document.getElementById("repere");
-let phone = document.getElementById("phone");
-
-// validation
-if(!province.value || !commune.value || !quartier.value || !phone.value){
-notifShow("Complète toutes les informations");
-return;
-}
-
-// DATA PROPRE (CLIENT + RESTO)
-const data={
-
-restaurantId: restaurantData.id,
-restaurantName: restaurantData.name,
-restaurantAddress: restaurantData.address,
-restaurantLat: restaurantData.lat,
-restaurantLng: restaurantData.lng,
-
-clientName:"Client Ciza",
-clientId:"client_demo",
-
+const ref = await addDoc(collection(db,"orders"),{
+restaurantId:restaurantData.id,
 items:cart,
 total,
-status:"pending",
-
-clientLat:userLocation?.lat || -3.38,
-clientLng:userLocation?.lng || 29.36,
-
-province:province.value,
-commune:commune.value,
-quartier:quartier.value,
-repere:repere?.value || "",
-phone:phone.value,
-
+status:"pending_restaurant",
 createdAt:Date.now()
-};
-
-try{
-
-// 🔥 ENVOI FIRESTORE
-const ref = await addDoc(collection(db,"orders"),data);
+});
 
 currentOrderId = ref.id;
-
-// 🔥 RESET PANIER
 cart=[];
 
-// 🔥 NOTIF
 notifShow("Commande envoyée");
 
-// 🔥 TRACKING LIVE
-track();
+// 🔥 TRACKING DIRECT
+trackOrder();
+}
 
-}catch(e){
-console.error(e);
-notifShow("Erreur commande ❌");
-}
-}
-function track(){
-onSnapshot(doc(db,"orders",currentOrderId),(d)=>{
-let o=d.data();
+// 🔥 TRACKING REALTIME
+function trackOrder(){
+
+onSnapshot(doc(db,"orders",currentOrderId),(snap)=>{
+let o=snap.data();
 if(!o)return;
+
 renderTracking(o);
 });
 }
 
-// STEP HELPER (OBLIGATOIRE)
-function isActive(current, step){
-const order=["pending","accepted","preparing","ready","picked","delivered"];
-return order.indexOf(step) <= order.indexOf(current);
-}
-  
+// UI TRACKING
 function renderTracking(o){
 
 let steps={
-pending:"Commande confirmée",
-accepted:"Restaurant accepte",
-preparing:"Préparation en cours",
-ready:"Commande prête",
-picked:"Chauffeur en route",
+pending_restaurant:"En attente restaurant",
+accepted:"Acceptée",
+preparing:"Préparation",
+ready:"Prête",
+assigned:"Chauffeur assigné",
+picked:"En livraison",
 delivered:"Livré"
 };
 
 app.innerHTML=`
+<div class="header">Suivi commande</div>
 
-<!-- HEADER -->
-<div style="display:flex;align-items:center;padding:20px;gap:10px;">
-
-<button onclick="renderHome()" 
-style="
-background:#000;
-border:1px solid #333;
-color:#fff;
-width:40px;
-height:40px;
-border-radius:50%;
-font-size:18px;
-">
-←
-</button>
-
-<div style="font-size:22px;font-weight:800;">Suivi</div>
-
+<div style="margin:15px;font-weight:700;">
+${steps[o.status]||"En cours"}
 </div>
 
-<!-- STATUS -->
-<div style="margin:15px;background:#151517;padding:18px;border-radius:18px;">
-<div style="font-size:16px;font-weight:700;">
-${steps[o.status] || "En cours"}
-</div>
-
-<div style="font-size:13px;color:#aaa;margin-top:5px;">
-${o.status==="picked" ? "Votre chauffeur arrive..." :
-o.status==="delivered" ? "Commande livrée 🍔" :
-"Votre commande est en traitement"}
-</div>
-</div>
-
-<!-- MAP -->
-<div id="map"></div>
-
-<!-- STEPS -->
-<div style="padding:10px 15px;">
 ${Object.keys(steps).map(s=>`
-<div class="step ${isActive(o.status,s)?"activeStep":""}">
+<div class="step ${Object.keys(steps).indexOf(s)<=Object.keys(steps).indexOf(o.status)?"activeStep":""}">
 ${steps[s]}
 </div>
 `).join("")}
-</div>
-
 `;
-
-// 🔥 CLEAN MAP (ULTRA IMPORTANT)
-if(window.myMap){
-window.myMap.remove();
-}
-
-// 🔥 INIT MAP
-window.myMap = L.map('map').setView([o.clientLat,o.clientLng],13);
-
-// TILE
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(window.myMap);
-
-// POSITIONS
-let client=[o.clientLat,o.clientLng];
-let driver=[
-o.driverLat || o.clientLat+0.01,
-o.driverLng || o.clientLng+0.01
-];
-
-// ICONS
-let clientIcon=L.icon({
-iconUrl:"https://cdn-icons-png.flaticon.com/512/64/64113.png",
-iconSize:[30,30]
-});
-
-let driverIcon=L.icon({
-iconUrl:"https://cdn-icons-png.flaticon.com/512/744/744465.png",
-iconSize:[35,35]
-});
-
-// MARKERS
-L.marker(client,{icon:clientIcon}).addTo(window.myMap);
-L.marker(driver,{icon:driverIcon}).addTo(window.myMap);
-
-// LINE
-L.polyline([driver,client],{
-color:"#D4AF37",
-weight:4
-}).addTo(window.myMap);
-
-}
-// PROFIL PREMIUM
-window.profile=function(){
-
-let user = auth.currentUser;
-
-// 🔴 PAS CONNECTÉ
-if(!user){
-app.innerHTML=`
-<div class="header">Profil</div>
-
-<div style="padding:20px;text-align:center;">
-
-<div style="font-size:60px;margin-bottom:10px;">👤</div>
-
-<div style="font-weight:700;margin-bottom:10px;">
-Non connecté
-</div>
-
-<div style="color:#aaa;font-size:14px;margin-bottom:20px;">
-Connecte-toi pour accéder à ton profil
-</div>
-
-<button class="btn" onclick="notifShow('Connexion bientôt disponible')">
-Se connecter
-</button>
-
-</div>
-`;
-return;
-}
-
-// 🟢 CONNECTÉ
-let name = user.email ? user.email.split("@")[0] : "Client";
-
-app.innerHTML=`
-<div class="profile">
-
-<div class="avatar"></div>
-
-<h2>${name}</h2>
-<p style="color:#aaa;font-size:13px;">Compte actif</p>
-
-<div class="info">📧 ${user.email}</div>
-<div class="info">🆔 ${user.uid}</div>
-
-<div id="map"></div>
-
-<button class="btn" style="margin-top:20px;background:#8B0000;color:#fff;" onclick="deleteAccount()">
-Supprimer mon compte
-</button>
-
-</div>
-`;
-
-// MAP
-let lat = userLocation?.lat || -3.38;
-let lng = userLocation?.lng || 29.36;
-
-let map=L.map('map').setView([lat,lng],13);
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-L.marker([lat,lng]).addTo(map);
-}
-
-  
-window.deleteAccount=function(){
-if(!confirm("Supprimer compte ?"))return;
-deleteUser(auth.currentUser).then(()=>notifShow("Compte supprimé"));
 }
 
 renderHome();
