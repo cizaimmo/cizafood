@@ -3,352 +3,212 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ciza Driver PRO MAX</title>
+<title>CizaFood Driver</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <style>
-body{margin:0;background:#0B0B0C;color:#fff;font-family:Arial;}
-#map{height:55vh;}
-.btn{
-width:100%;
-padding:16px;
-border:none;
-background:#D4AF37;
-color:#000;
-font-weight:bold;
-margin-top:10px;
-border-radius:12px;
-}
+body{margin:0;background:#0B0B0C;color:#fff;font-family:Inter;}
+.header{padding:20px;font-weight:800;font-size:22px;}
+.card{background:#151517;margin:10px;padding:14px;border-radius:12px;}
+.btn{width:100%;padding:12px;border:none;border-radius:10px;background:#D4AF37;font-weight:800;}
 .btn.red{background:#ff4444;color:#fff;}
-.card{padding:15px;}
-.info{margin-top:10px;font-size:14px;color:#ccc;}
-.big{font-size:18px;font-weight:bold;margin-top:10px;}
-.driverBox{
-margin-top:10px;
-padding:10px;
-background:#151517;
-border-radius:12px;
-text-align:center;
-}
-.driverBox img{
-width:70px;
-height:70px;
-border-radius:50%;
-margin-bottom:5px;
-}
+#map{height:300px;margin:10px;border-radius:12px;}
+.status{padding:10px;margin:10px;border-radius:10px;text-align:center;font-weight:700;}
+.online{background:#00c853;color:#000;}
+.offline{background:#444;}
+.timer{color:#D4AF37;font-weight:800;margin-top:5px;}
 </style>
 </head>
 
 <body>
 
-<div id="map"></div>
+<div class="header">🚗 Driver App</div>
 
-<div class="card">
-<div id="status">🚗 En attente...</div>
-<div id="eta" class="big"></div>
+<div id="statusBox" class="status offline">OFFLINE</div>
 
-<button class="btn" onclick="start()">📍 Activer GPS</button>
-<button class="btn" onclick="pickup()">📦 Pickup</button>
-<button class="btn" onclick="deliver()">🏁 Livré</button>
-<button class="btn red" onclick="refuse()">❌ Refuser</button>
-<button class="btn" onclick="navigate()">🧭 Naviguer</button>
-
-<div class="info" id="info"></div>
+<div style="padding:10px;">
+<button class="btn" onclick="toggleStatus()">Changer statut</button>
 </div>
 
-<script type="module">
+<div id="orders"></div>
 
+<div id="map"></div>
+
+<script type="module">
+  
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-getFirestore,
-collection,
-onSnapshot,
-doc,
-runTransaction,
-updateDoc,
-enableIndexedDbPersistence
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, doc, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const app = initializeApp({
 apiKey:"AIzaSyA-Dh3VguPXVk27DwOkMjRbYIXEhrEPcsM",
-authDomain:"cizafood.firebaseapp.com",
 projectId:"cizafood"
 });
 
 const db = getFirestore(app);
 
-// ✅ OFFLINE MODE
-enableIndexedDbPersistence(db).catch(()=>{});
+const driverId = "driver1";
 
-// ✅ DRIVER ID PERSISTANT
-let driverId = localStorage.getItem("driverId");
-if(!driverId){
-driverId = "driver_" + Math.floor(Math.random()*100000);
-localStorage.setItem("driverId", driverId);
-}
-
-let currentOrderId=null;
+let driverStatus="offline";
 let currentOrder=null;
+let map, driverMarker;
 
-let myLat=-3.38,myLng=29.36;
-
-let map=L.map('map').setView([myLat,myLng],13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-let driverMarker=L.marker([myLat,myLng]).addTo(map);
-
-// GPS
-function start(){
-navigator.geolocation.watchPosition(pos=>{
-myLat=pos.coords.latitude;
-myLng=pos.coords.longitude;
-
-driverMarker.setLatLng([myLat,myLng]);
-
-if(currentOrderId){
-updateDoc(doc(db,"orders",currentOrderId),{
-driverLat:myLat,
-driverLng:myLng,
-lastDriverUpdate:Date.now()
-});
-}
-});
+// STATUS
+window.toggleStatus = async function(){
+driverStatus = driverStatus==="offline"?"online":"offline";
+await updateDoc(doc(db,"drivers",driverId),{status:driverStatus});
+renderStatus();
 }
 
-// DISTANCE
-function dist(a,b,c,d){
-let R=6371;
-let dLat=(c-a)*Math.PI/180;
-let dLng=(d-b)*Math.PI/180;
-let x=Math.sin(dLat/2)**2+
-Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*
-Math.sin(dLng/2)**2;
-return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+function renderStatus(){
+statusBox.className="status "+driverStatus;
+statusBox.innerText=driverStatus.toUpperCase();
 }
 
-// ETA
-function eta(lat,lng){
-let d=dist(myLat,myLng,lat,lng);
-return Math.max(3,Math.round((d/30)*60));
-}
-
-// 🔁 RECONNECT AUTO
+// 🔥 LISTENER UBER LEVEL
 onSnapshot(collection(db,"orders"),snap=>{
-snap.forEach(doc=>{
-let o = doc.data();
 
-if(o.assignedDriverId === driverId){
-currentOrderId = doc.id;
-currentOrder = o;
-updateUI(o);
-updateMap(o);
-}
-});
-});
+let html="";
 
-// MATCHING + TRACKING
-onSnapshot(collection(db,"orders"),snap=>{
-snap.forEach(async d=>{
+snap.forEach(docSnap=>{
+let o=docSnap.data();
 
-let o=d.data();
-if(!o) return;
-
-if(!o.restaurantLat || !o.clientLat) return;
-
-// 🔒 éviter conflit
-if(currentOrderId && o.assignedDriverId !== driverId){
-return;
+// 🔥 AUTO EXPIRE OFFER (IMPORTANT)
+if(o.status==="searching_driver" && o.offerExpiresAt && Date.now()>o.offerExpiresAt){
+retryDispatch(docSnap.id);
 }
 
-// MATCH
-if(
-o.status==="ready" &&
-!currentOrderId &&
-(!o.refusedDrivers || !o.refusedDrivers.includes(driverId))
-){
+// 🔥 OFFER
+if(o.status==="searching_driver" && o.offerDriverId===driverId){
 
-let distance=dist(myLat,myLng,o.restaurantLat,o.restaurantLng);
+let timeLeft=Math.max(0,Math.floor((o.offerExpiresAt-Date.now())/1000));
 
-if(distance<5){
+currentOrder={id:docSnap.id,...o};
 
-try{
-await runTransaction(db, async tx=>{
-let ref=doc(db,"orders",d.id);
-let fresh=await tx.get(ref);
+html+=`
+<div class="card">
+<b>Nouvelle course</b><br>
+${o.total} BIF<br>
 
-if(!fresh.exists()) return;
-let data=fresh.data();
+<div class="timer">⏳ ${timeLeft}s</div>
 
-if(data.assignedDriverId) return;
-if(data.status!=="ready") return;
-
-tx.update(ref,{
-assignedDriverId:driverId,
-status:"accepted",
-driverAcceptedAt:Date.now(),
-
-driverName:"Driver Ciza",
-driverPhoto:"https://cdn-icons-png.flaticon.com/512/149/149071.png",
-vehicleType:"Moto",
-vehicleColor:"Noir",
-plateNumber:"BJM-2024"
-});
-
-currentOrderId=d.id;
-currentOrder=data;
-});
-}catch(e){}
-}
-}
-
-// TRACK
-if(d.id===currentOrderId){
-
-currentOrder=o;
-
-// TIMEOUT
-if(o.status==="accepted" && Date.now()-o.driverAcceptedAt>600000){
-refuse();
-return;
-}
-
-updateUI(o);
-updateMap(o);
-}
-});
-});
-
-// UI
-function updateUI(o){
-
-let targetLat=o.status==="accepted"?o.restaurantLat:o.clientLat;
-let targetLng=o.status==="accepted"?o.restaurantLng:o.clientLng;
-
-document.getElementById("status").innerText=
-o.status==="accepted"?"📦 Aller au resto":
-o.status==="picked"?"🚗 Livraison":
-o.status==="delivered"?"✅ Terminé":"⌛";
-
-document.getElementById("eta").innerText=
-"⏱ "+eta(targetLat,targetLng)+" min";
-
-document.getElementById("info").innerHTML=`
-
-<div class="driverBox">
-<img src="${o.driverPhoto || ""}">
-<b>${o.driverName || "-"}</b><br>
-${o.vehicleType || ""} - ${o.vehicleColor || ""}<br>
-${o.plateNumber || ""}
+<button class="btn" onclick="accept()">Accepter</button>
+<button class="btn red" onclick="refuse()">Refuser</button>
 </div>
-
-🏪 ${o.restaurantName || "-"}<br>
-📍 ${o.restaurantAddress || "-"}<br>
-📞 ${o.phone || "-"}
 `;
 }
 
-// MAP
-function updateMap(o){
+// 🔥 ASSIGNED
+if(o.status==="assigned" && o.assignedDriverId===driverId){
 
-if(window.line) map.removeLayer(window.line);
-if(window.markerA) map.removeLayer(window.markerA);
+currentOrder={id:docSnap.id,...o};
 
-let target=o.status==="accepted"
-?[o.restaurantLat,o.restaurantLng]
-:[o.clientLat,o.clientLng];
+html+=`
+<div class="card">
+<b>Course active</b><br>
+${o.total} BIF<br>
 
-window.markerA=L.marker(target).addTo(map);
-
-window.line=L.polyline([[myLat,myLng],target],{
-color:o.status==="accepted"?"#D4AF37":"#00FFAA"
-}).addTo(map);
-
-map.setView(target,13);
+<button class="btn" onclick="pick()">Ramasser</button>
+<button class="btn red" onclick="deliver()">Livré</button>
+</div>
+`;
 }
 
-// PICKUP
-window.pickup=async()=>{
-if(!currentOrderId) return;
-
-let o=currentOrder;
-let d=dist(myLat,myLng,o.restaurantLat,o.restaurantLng);
-
-if(d>0.3){
-alert("❌ Trop loin du restaurant");
-return;
-}
-
-await runTransaction(db, async tx=>{
-let ref=doc(db,"orders",currentOrderId);
-let snap=await tx.get(ref);
-
-if(snap.data().assignedDriverId!==driverId) return;
-
-tx.update(ref,{status:"picked"});
-});
-}
-
-// DELIVERY
-window.deliver=async()=>{
-if(!currentOrderId) return;
-
-let o=currentOrder;
-let d=dist(myLat,myLng,o.clientLat,o.clientLng);
-
-if(d>0.3){
-alert("❌ Pas encore arrivé chez client");
-return;
-}
-
-await runTransaction(db, async tx=>{
-let ref=doc(db,"orders",currentOrderId);
-let snap=await tx.get(ref);
-
-if(snap.data().assignedDriverId!==driverId) return;
-
-tx.update(ref,{
-status:"delivered",
-completedAt:Date.now()
-});
 });
 
-currentOrderId=null;
-}
-
-// REFUSE
-window.refuse=async()=>{
-if(!currentOrderId) return;
-
-await runTransaction(db, async tx=>{
-let ref=doc(db,"orders",currentOrderId);
-let snap=await tx.get(ref);
-let data=snap.data();
-
-tx.update(ref,{
-assignedDriverId:null,
-status:"ready",
-refusedDrivers:[...(data.refusedDrivers||[]),driverId]
-});
+orders.innerHTML=html;
 });
 
-currentOrderId=null;
-}
+// 🔥 ACCEPT (SÉCURISÉ)
+window.accept=async function(){
 
-// NAV
-window.navigate=()=>{
 if(!currentOrder) return;
 
-let lat=currentOrder.status==="accepted"
-?currentOrder.restaurantLat
-:currentOrder.clientLat;
+await updateDoc(doc(db,"orders",currentOrder.id),{
+status:"assigned",
+assignedDriverId:driverId,
+driverName:"Jean",
+driverPhone:"+25770000000"
+});
 
-let lng=currentOrder.status==="accepted"
-?currentOrder.restaurantLng
-:currentOrder.clientLng;
-
-window.open(`https://www.google.com/maps?q=${lat},${lng}`);
+await updateDoc(doc(db,"drivers",driverId),{
+status:"busy",
+currentOrderId:currentOrder.id
+});
 }
+
+// 🔥 REFUSE → RETRY AUTO
+window.refuse=async function(){
+
+await retryDispatch(currentOrder.id);
+}
+
+// 🔥 RETRY DISPATCH (UBER CORE)
+async function retryDispatch(orderId){
+
+let driversSnap = await getDocs(collection(db,"drivers"));
+
+let nextDriver=null;
+
+driversSnap.forEach(doc=>{
+let d=doc.data();
+
+// 🔥 driver online seulement
+if(d.status==="online" && doc.id!==driverId && !nextDriver){
+nextDriver={id:doc.id,...d};
+}
+});
+
+if(!nextDriver){
+await updateDoc(doc(db,"orders",orderId),{
+status:"no_driver"
+});
+return;
+}
+
+// 🔥 NOUVELLE OFFER
+await updateDoc(doc(db,"orders",orderId),{
+offerDriverId:nextDriver.id,
+offerExpiresAt:Date.now()+10000
+});
+}
+
+// 🔥 ACTIONS
+window.pick=async function(){
+await updateDoc(doc(db,"orders",currentOrder.id),{status:"picked"});
+}
+
+window.deliver=async function(){
+
+await updateDoc(doc(db,"orders",currentOrder.id),{status:"delivered"});
+
+await updateDoc(doc(db,"drivers",driverId),{
+status:"online",
+currentOrderId:null
+});
+}
+
+// 🔥 GPS LIVE
+navigator.geolocation.watchPosition(async pos=>{
+
+let lat=pos.coords.latitude;
+let lng=pos.coords.longitude;
+
+await updateDoc(doc(db,"drivers",driverId),{lat,lng});
+
+if(!map){
+map=L.map('map').setView([lat,lng],13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+driverMarker=L.marker([lat,lng]).addTo(map);
+}else{
+driverMarker.setLatLng([lat,lng]);
+map.panTo([lat,lng]);
+}
+
+});
+
+renderStatus();
 
 </script>
 
