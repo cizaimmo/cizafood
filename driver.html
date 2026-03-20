@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CizaFood Driver</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<style>
+body{margin:0;background:#0B0B0C;color:#fff;font-family:Inter;}
+.header{padding:20px;font-weight:800;font-size:22px;}
+.card{background:#151517;margin:10px;padding:14px;border-radius:12px;}
+.btn{width:100%;padding:12px;border:none;border-radius:10px;background:#D4AF37;font-weight:800;}
+.btn.red{background:#ff4444;color:#fff;}
+#map{height:300px;margin:10px;border-radius:12px;}
+.status{padding:10px;margin:10px;border-radius:10px;text-align:center;font-weight:700;}
+.online{background:#00c853;color:#000;}
+.offline{background:#444;}
+.timer{color:#D4AF37;font-weight:800;margin-top:5px;}
+input{margin:10px;width:90%;padding:10px;border-radius:8px;border:none;}
+</style>
+</head>
+
+<body>
+
+<div class="header">🚗 Driver App</div>
+
+<div id="statusBox" class="status offline">OFFLINE</div>
+
+<div style="padding:10px;">
+<button class="btn" onclick="toggleStatus()">Changer statut</button>
+</div>
+
+<!-- 🔥 PHOTO DRIVER -->
+<input type="file" id="driverPhoto">
+
+<div id="orders"></div>
+
+<div id="map"></div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, onSnapshot, doc, updateDoc, getDocs, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+const app = initializeApp({
+apiKey:"AIzaSyA-Dh3VguPXVk27DwOkMjRbYIXEhrEPcsM",
+projectId:"cizafood"
+});
+
+const db = getFirestore(app);
+const storage = getStorage();
+
+const driverId = "driver1";
+
+let driverStatus="offline";
+let currentOrder=null;
+let map, driverMarker;
+
+// 🔥 CREATE DRIVER AUTO
+await setDoc(doc(db,"drivers",driverId),{
+status:"offline",
+name:"Driver Ciza",
+phone:"+25770000000",
+vehicleType:"Moto",
+vehicleColor:"Noir",
+plateNumber:"AB1234",
+createdAt:Date.now()
+},{merge:true});
+
+// 🔥 UPLOAD PHOTO
+async function uploadPhoto(){
+let file = document.getElementById("driverPhoto").files[0];
+if(!file) return "";
+
+let storageRef = ref(storage,"drivers/"+driverId+".jpg");
+await uploadBytes(storageRef,file);
+return await getDownloadURL(storageRef);
+}
+
+// STATUS
+window.toggleStatus = async function(){
+driverStatus = driverStatus==="offline"?"online":"offline";
+
+await setDoc(doc(db,"drivers",driverId),{
+status:driverStatus
+},{merge:true});
+
+renderStatus();
+}
+
+function renderStatus(){
+statusBox.className="status "+driverStatus;
+statusBox.innerText=driverStatus.toUpperCase();
+}
+
+// 🔥 LISTENER
+onSnapshot(collection(db,"orders"),snap=>{
+
+let html="";
+
+snap.forEach(docSnap=>{
+let o=docSnap.data();
+
+// OFFER
+if(o.status==="searching_driver" && o.offerDriverId===driverId){
+
+let timeLeft=Math.max(0,Math.floor((o.offerExpiresAt-Date.now())/1000));
+
+currentOrder={id:docSnap.id,...o};
+
+html+=`
+<div class="card">
+<b>Nouvelle course</b><br>
+${o.total} BIF<br>
+
+<div class="timer">⏳ ${timeLeft}s</div>
+
+<button class="btn" onclick="accept()">Accepter</button>
+<button class="btn red" onclick="refuse()">Refuser</button>
+</div>
+`;
+}
+
+// ASSIGNED
+if(o.status==="assigned" && o.assignedDriverId===driverId){
+
+currentOrder={id:docSnap.id,...o};
+
+html+=`
+<div class="card">
+<b>Course active</b><br>
+${o.total} BIF<br>
+
+<button class="btn" onclick="pick()">Ramasser</button>
+<button class="btn red" onclick="deliver()">Livré</button>
+</div>
+`;
+}
+
+});
+
+orders.innerHTML=html;
+});
+
+// ACCEPT
+window.accept=async function(){
+
+if(!currentOrder) return;
+
+let driverSnap = await getDoc(doc(db,"drivers",driverId));
+let d = driverSnap.data();
+
+let photoUrl = await uploadPhoto();
+
+await updateDoc(doc(db,"orders",currentOrder.id),{
+
+status:"assigned",
+assignedDriverId:driverId,
+
+driverName:d.name,
+driverPhone:d.phone,
+driverPhoto:photoUrl || d.photo || "",
+
+vehicleType:d.vehicleType,
+vehicleColor:d.vehicleColor,
+plateNumber:d.plateNumber
+
+});
+
+await setDoc(doc(db,"drivers",driverId),{
+status:"busy",
+currentOrderId:currentOrder.id,
+photo:photoUrl || d.photo || ""
+},{merge:true});
+}
+
+// REFUSE
+window.refuse=async function(){
+await updateDoc(doc(db,"orders",currentOrder.id),{
+offerDriverId:null
+});
+}
+
+// ACTIONS
+window.pick=async function(){
+await updateDoc(doc(db,"orders",currentOrder.id),{status:"picked"});
+}
+
+window.deliver=async function(){
+
+await updateDoc(doc(db,"orders",currentOrder.id),{status:"delivered"});
+
+await setDoc(doc(db,"drivers",driverId),{
+status:"online",
+currentOrderId:null
+},{merge:true});
+}
+
+// GPS
+navigator.geolocation.watchPosition(async pos=>{
+
+let lat=pos.coords.latitude;
+let lng=pos.coords.longitude;
+
+await setDoc(doc(db,"drivers",driverId),{lat,lng},{merge:true});
+
+if(!map){
+map=L.map('map').setView([lat,lng],13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+driverMarker=L.marker([lat,lng]).addTo(map);
+}else{
+driverMarker.setLatLng([lat,lng]);
+map.panTo([lat,lng]);
+}
+
+});
+
+renderStatus();
+
+</script>
+
+</body>
+</html>
