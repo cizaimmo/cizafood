@@ -9,8 +9,6 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
-<!-- 🔥 AJOUT STORAGE (NE TOUCHE PAS TON CODE) -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
 <style>
@@ -24,6 +22,7 @@ color:#fff;
 .header{
 padding:20px;
 border-bottom:1px solid #222;
+background:linear-gradient(180deg,#111315 0%,#0B0B0C 100%);
 }
 
 .topbar{
@@ -47,6 +46,7 @@ margin-top:10px;
 display:flex;
 gap:15px;
 padding:15px;
+overflow-x:auto;
 }
 
 .box{
@@ -56,11 +56,13 @@ border-radius:12px;
 min-width:160px;
 font-size:18px;
 font-weight:700;
+border:1px solid #202225;
+box-shadow:0 8px 20px rgba(0,0,0,0.18);
 }
 
 .board{
 display:grid;
-grid-template-columns:repeat(4,1fr);
+grid-template-columns:repeat(5,1fr);
 gap:15px;
 padding:15px;
 }
@@ -69,11 +71,14 @@ padding:15px;
 background:#111;
 padding:10px;
 border-radius:12px;
+border:1px solid #1d1d1f;
+min-width:0;
 }
 
 .column h3{
 margin-bottom:10px;
 text-align:center;
+font-size:15px;
 }
 
 .card{
@@ -87,13 +92,13 @@ transition:0.2s;
 }
 
 .card:hover{
-transform:scale(1.02);
+transform:scale(1.01);
 border:1px solid #D4AF37;
 }
 
 .card.urgent{
 border:1px solid red;
-box-shadow:0 0 10px red;
+box-shadow:0 0 10px rgba(255,0,0,0.25);
 }
 
 .meta{
@@ -118,12 +123,17 @@ display:flex;
 gap:10px;
 margin-top:10px;
 align-items:center;
+padding:10px;
+background:#121214;
+border-radius:12px;
+border:1px solid #26262a;
 }
 
 .driver img{
 width:45px;
 height:45px;
 border-radius:50%;
+object-fit:cover;
 }
 
 .btn{
@@ -134,6 +144,8 @@ border:none;
 border-radius:10px;
 font-weight:700;
 background:#D4AF37;
+color:#111;
+cursor:pointer;
 }
 
 .btn.red{
@@ -151,32 +163,94 @@ background:#25D366;
 color:#000;
 }
 
-/* 🔥 MENU STYLE AMÉLIORÉ */
 .menu-box{
-padding:15px;
+padding:18px 15px 25px;
 border-top:1px solid #222;
+background:linear-gradient(180deg,#0E0E10 0%,#0B0B0C 100%);
+}
+
+.menu-form{
+background:#121214;
+border:1px solid #232327;
+border-radius:18px;
+padding:16px;
+box-shadow:0 10px 24px rgba(0,0,0,0.22);
+margin-bottom:14px;
+}
+
+.form-title{
+font-size:18px;
+font-weight:800;
+margin-bottom:10px;
+}
+
+.form-subtitle{
+font-size:12px;
+color:#9a9a9f;
+margin-bottom:10px;
+}
+
+.form-grid{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:10px;
+}
+
+input, select, textarea{
+width:100%;
+padding:12px;
+margin-top:8px;
+border-radius:10px;
+border:1px solid #2a2a30;
+background:#1A1A1D;
+color:#fff;
+font-family:Inter;
+font-size:14px;
+box-sizing:border-box;
+}
+
+textarea{
+min-height:92px;
+resize:vertical;
+}
+
+.field-block{
+margin-top:6px;
+}
+
+.field-label{
+font-size:12px;
+color:#b4b4b8;
+margin-top:10px;
+display:block;
+}
+
+.form-actions{
+display:flex;
+gap:10px;
+margin-top:12px;
+}
+
+.form-actions .btn{
+margin-top:0;
+}
+
+#boissonFields{
+display:none;
 }
 
 #menu{
 display:grid;
 grid-template-columns:repeat(2,1fr);
 gap:12px;
-max-height:350px;
+max-height:420px;
 overflow-y:auto;
 padding-top:10px;
 }
 
-input, select{
-width:100%;
-padding:10px;
-margin-top:8px;
-border-radius:8px;
-border:none;
-}
-
 .card img{
 width:100%;
-height:110px;
+height:120px;
 object-fit:cover;
 border-radius:10px;
 margin-top:5px;
@@ -184,26 +258,106 @@ margin-top:5px;
 
 .menu-title{
 font-weight:700;
-font-size:14px;
-margin-top:6px;
+font-size:15px;
+margin-top:8px;
 }
 
 .menu-price{
 color:#D4AF37;
 font-weight:800;
-margin-top:4px;
+margin-top:5px;
+font-size:15px;
+}
+
+.menu-old-price{
+color:#888;
+text-decoration:line-through;
+font-size:12px;
+margin-right:6px;
+}
+
+.menu-final-price{
+color:#00d084;
+font-weight:800;
 }
 
 .menu-meta{
 font-size:11px;
 color:#aaa;
-margin-top:4px;
+margin-top:6px;
+line-height:1.5;
 }
+
+.badge-row{
+display:flex;
+flex-wrap:wrap;
+gap:6px;
+margin-top:8px;
+}
+
+.badge{
+display:inline-block;
+padding:4px 8px;
+border-radius:999px;
+font-size:11px;
+font-weight:700;
+background:#25252a;
+color:#ddd;
+}
+
+.badge.plat{background:#2c2c32;color:#fff;}
+.badge.boisson{background:#073b3a;color:#55ffd8;}
+.badge.dessert{background:#4a2b00;color:#ffd28a;}
+.badge.promo{background:#3d0d0d;color:#ff9a9a;}
 
 .card .btn{
 padding:8px;
 font-size:12px;
 margin-top:6px;
+}
+
+.menu-toolbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:10px;
+margin-top:8px;
+margin-bottom:4px;
+}
+
+.menu-toolbar input{
+margin-top:0;
+}
+
+.empty{
+color:#888;
+font-size:13px;
+padding:12px;
+text-align:center;
+background:#141416;
+border:1px dashed #2a2a2e;
+border-radius:12px;
+}
+
+@media (max-width: 1100px){
+.board{
+grid-template-columns:repeat(2,1fr);
+}
+}
+
+@media (max-width: 760px){
+.board{
+grid-template-columns:1fr;
+}
+.form-grid{
+grid-template-columns:1fr;
+}
+#menu{
+grid-template-columns:1fr;
+}
+.kpi{
+padding:12px;
+}
 }
 </style>
 </head>
@@ -222,38 +376,85 @@ margin-top:6px;
 
 <div class="board" id="board"></div>
 
-<!-- 🔥 AJOUT MENU -->
 <div class="menu-box">
-<h3>🍔 Gestion Menu</h3>
+<div class="menu-form">
+<div class="form-title">🍔 Gestion Menu</div>
+<div class="form-subtitle">Ajout intelligent des plats, boissons et desserts avec promotion et image.</div>
 
+<div class="form-grid">
+<div class="field-block">
+<label class="field-label" for="name">Nom</label>
 <input id="name" placeholder="Nom du plat">
-<input id="price" placeholder="Prix">
-<input type="file" id="photo">
+</div>
 
-<!-- 🔥 NOUVEAU -->
-<select id="category">
+<div class="field-block">
+<label class="field-label" for="price">Prix</label>
+<input id="price" placeholder="Prix">
+</div>
+
+<div class="field-block">
+<label class="field-label" for="category">Catégorie</label>
+<select id="category" onchange="handleCategory()">
 <option value="plat">Plat</option>
 <option value="boisson">Boisson</option>
+<option value="dessert">Dessert</option>
 </select>
+</div>
 
+<div class="field-block">
+<label class="field-label" for="promo">Promotion (%)</label>
+<input id="promo" placeholder="Ex: 20">
+</div>
+
+<div class="field-block" style="grid-column:1 / -1;">
+<label class="field-label" for="photo">Photo</label>
+<input type="file" id="photo" accept="image/*">
+</div>
+</div>
+
+<div id="boissonFields">
+<div class="form-grid">
+<div class="field-block">
+<label class="field-label" for="type">Type boisson</label>
 <select id="type">
 <option value="">Type</option>
 <option value="eau">Eau</option>
 <option value="fanta">Fanta</option>
 <option value="jus">Jus</option>
 <option value="biere">Bière</option>
+<option value="coca">Coca-Cola</option>
+<option value="sprite">Sprite</option>
+<option value="the">Thé</option>
+<option value="cafe">Café</option>
 </select>
+</div>
 
+<div class="field-block">
+<label class="field-label" for="size">Taille</label>
 <select id="size">
 <option value="">Taille</option>
 <option value="petit">Petit</option>
 <option value="moyen">Moyen</option>
 <option value="grand">Grand</option>
 </select>
+</div>
+</div>
+</div>
 
-<input id="description" placeholder="Description">
+<div class="field-block">
+<label class="field-label" for="description">Description</label>
+<textarea id="description" placeholder="Description"></textarea>
+</div>
 
+<div class="form-actions">
 <button class="btn" onclick="addItem()">Ajouter</button>
+</div>
+</div>
+
+<div class="menu-toolbar">
+<h3 style="margin:0;">📋 Menu actuel</h3>
+<input id="searchMenu" placeholder="🔍 Rechercher un plat..." onkeyup="searchMenu(this.value)" style="max-width:260px;">
+</div>
 
 <div id="menu"></div>
 </div>
@@ -283,6 +484,19 @@ new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
 }
 
 let known = new Set();
+
+function handleCategory(){
+let category = document.getElementById("category").value;
+let block = document.getElementById("boissonFields");
+
+if(category === "boisson"){
+block.style.display = "block";
+}else{
+block.style.display = "none";
+document.getElementById("type").value = "";
+document.getElementById("size").value = "";
+}
+}
 
 function getTimer(o){
 let base=o.createdAt || o.restaurantAcceptedAt;
@@ -374,7 +588,7 @@ board.innerHTML=`
 `;
 });
 
-/* 🔥 MENU CRUD */
+/* MENU CRUD */
 
 async function addItem(){
 
@@ -386,6 +600,12 @@ let category = document.getElementById("category").value;
 let type = document.getElementById("type").value;
 let size = document.getElementById("size").value;
 let description = document.getElementById("description").value;
+let promo = document.getElementById("promo").value || 0;
+
+if(!name || !price){
+alert("Remplis le nom et le prix");
+return;
+}
 
 let photoUrl="";
 
@@ -395,10 +615,20 @@ await ref.put(file);
 photoUrl=await ref.getDownloadURL();
 }
 
+let originalPrice = Number(price);
+let promoValue = Number(promo);
+let finalPrice = originalPrice;
+
+if(promoValue > 0){
+finalPrice = originalPrice - (originalPrice * promoValue / 100);
+}
+
 await db.collection("items").add({
 restaurant:restaurantName,
 name:name,
-price:Number(price),
+price:originalPrice,
+promo:promoValue,
+finalPrice:Number(finalPrice),
 photo:photoUrl,
 category:category,
 type:type,
@@ -410,6 +640,13 @@ createdAt:Date.now()
 document.getElementById("name").value="";
 document.getElementById("price").value="";
 document.getElementById("photo").value="";
+document.getElementById("promo").value="";
+document.getElementById("description").value="";
+document.getElementById("category").value="plat";
+document.getElementById("type").value="";
+document.getElementById("size").value="";
+handleCategory();
+
 alert("✅ Plat ajouté");
 }
 
@@ -417,13 +654,56 @@ function deleteItem(id){
 db.collection("items").doc(id).delete();
 }
 
-function editItem(id,name,price){
-let n=prompt("Nom",name);
-let p=prompt("Prix",price);
-db.collection("items").doc(id).update({name:n,price:Number(p)});
+function editItem(id,item){
+let n=prompt("Nom", item.name || "");
+if(n===null) return;
+
+let p=prompt("Prix", item.price || 0);
+if(p===null) return;
+
+let cat=prompt("Catégorie (plat / boisson / dessert)", item.category || "plat");
+if(cat===null) return;
+
+let typ=prompt("Type", item.type || "");
+if(typ===null) return;
+
+let siz=prompt("Taille", item.size || "");
+if(siz===null) return;
+
+let desc=prompt("Description", item.description || "");
+if(desc===null) return;
+
+let promo=prompt("Promotion (%)", item.promo || 0);
+if(promo===null) return;
+
+let originalPrice = Number(p);
+let promoValue = Number(promo || 0);
+let finalPrice = originalPrice;
+
+if(promoValue > 0){
+finalPrice = originalPrice - (originalPrice * promoValue / 100);
 }
 
-db.collection("items").onSnapshot(snap=>{
+db.collection("items").doc(id).update({
+name:n,
+price:originalPrice,
+category:cat,
+type:typ,
+size:siz,
+description:desc,
+promo:promoValue,
+finalPrice:Number(finalPrice)
+});
+}
+
+function searchMenu(q){
+q=q.toLowerCase();
+document.querySelectorAll("#menu .card").forEach(c=>{
+c.style.display = c.innerText.toLowerCase().includes(q) ? "block" : "none";
+});
+}
+
+db.collection("items").orderBy("createdAt","desc").onSnapshot(snap=>{
 let html="";
 snap.forEach(doc=>{
 let i=doc.data();
@@ -433,15 +713,32 @@ html+=`
 <div class="card">
 ${i.photo ? `<img src="${i.photo}">` : ""}
 <div class="menu-title">${i.name}</div>
-<div class="menu-price">💰 ${i.price} BIF</div>
-<div class="menu-meta">${i.category||""} ${i.type||""} ${i.size||""}</div>
 
-<button class="btn" onclick="editItem('${doc.id}','${i.name}',${i.price})">✏️</button>
-<button class="btn red" onclick="deleteItem('${doc.id}')">🗑</button>
+<div class="menu-price">
+${i.promo > 0
+? `<span class="menu-old-price">${i.price} BIF</span><span class="menu-final-price">${i.finalPrice} BIF</span> 🔥 -${i.promo}%`
+: `💰 ${i.price} BIF`}
+</div>
+
+<div class="badge-row">
+${i.category ? `<span class="badge ${i.category}">${i.category}</span>` : ""}
+${i.type ? `<span class="badge">${i.type}</span>` : ""}
+${i.size ? `<span class="badge">${i.size}</span>` : ""}
+${i.promo > 0 ? `<span class="badge promo">promo</span>` : ""}
+</div>
+
+<div class="menu-meta">
+${i.description || ""}
+</div>
+
+<button class="btn" onclick='editItem("${doc.id}", ${JSON.stringify(i).replace(/'/g, "&apos;")})'>✏️ Modifier</button>
+<button class="btn red" onclick="deleteItem('${doc.id}')">🗑 Supprimer</button>
 </div>`;
 });
-menu.innerHTML=html;
+menu.innerHTML=html || `<div class="empty">Aucun plat ajouté pour l’instant.</div>`;
 });
+
+handleCategory();
 
 </script>
 
